@@ -1,0 +1,66 @@
+.canvasContainer{
+   position: relative;
+   height: 500px;
+}
+.canvasContainer_moving{
+   cursor: grabbing;
+}
+.canvasWrap{
+   position: relative;
+   height: 100%;
+   overflow: hidden;
+   border: 1px solid #555555;
+}
+.canvas,
+.shadowCanvas,
+.linesCanvas{
+   position: absolute;
+   top: 0;
+   right: 0;
+}
+.canvas{
+   z-index: 2;
+}
+.shadowCanvas{
+   opacity: .21;
+}
+.linesCanvas{
+   width: 100%;
+   z-index: 2;
+}
+.canvasWrap__inner{
+   position: absolute;
+   top: 0;
+   right: 0;
+   width: 100%;
+   height: 100%;
+}
+
+.rightBar{
+   position: absolute;
+   top: 0;
+   left: 100%;
+   width: 55px;
+   height: 100%;
+   overflow: hidden;
+}
+.rightBar__inner,
+.priceBar,
+.priceScaleBar{
+   position: absolute;
+   left: 0;
+   top: 0;
+   width: 100%;
+   height: 100%;
+}
+.priceBar{
+   z-index: 2;
+}
+
+.priceBar,
+.priceScaleBar,
+.canvas,
+.shadowCanvas,
+.linesCanvas{
+   height: 100%;
+}

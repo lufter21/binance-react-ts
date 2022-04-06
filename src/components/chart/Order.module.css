@@ -1,0 +1,35 @@
+.canvasContainer{
+   position: absolute;
+   left: 0;
+   top: 0;
+   width: 100%;
+   height: 500px;
+   z-index: 3;
+}
+.canvasWrap{
+   position: relative;
+   height: 100%;
+   overflow: hidden;
+}
+.canvasWrap__inner,
+.rightBar__inner{
+   position: absolute;
+   top: 0;
+   left: 0;
+   width: 100%;
+   height: 100%;
+}
+.linesCanvas{
+   position: absolute;
+   top: 0;
+   left: 0;
+   width: 100%;
+   height: 100%;
+}
+.rightBar{
+   position: absolute;
+   top: 0;
+   left: 100%;
+   width: 55px;
+   height: 100%;
+}

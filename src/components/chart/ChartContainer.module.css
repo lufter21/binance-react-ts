@@ -1,0 +1,19 @@
+.chartContainer{
+   position: relative;
+   max-width: 1280px;
+}
+.chartContainer_moving{
+   cursor: grabbing;
+}
+.info{
+	position: absolute;
+	left: 10px;
+	top: 10px;
+	z-index: 2;
+}
+.select{
+	position: absolute;
+	left: 10px;
+	top: 35px;
+	z-index: 4;
+}
