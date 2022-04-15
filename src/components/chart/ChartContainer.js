@@ -122,7 +122,7 @@ class ChartContainer extends React.Component {
 		moveCanvas(this.containerRef.current, moveXEls, moveYEls);
 	}
 
-	selectChart() {
+	selectChart() { 
 		let lastCandleIsFinal = false;
 		const symbol = this.selectRef.current.value;
 
@@ -134,7 +134,7 @@ class ChartContainer extends React.Component {
 			this.candlesWS.close();
 		}
 
-		fetch('http://127.0.0.1:8080/candlesticks?symbol=' + symbol + '&interval=' + interval + '&limit=100', {
+		fetch('http://127.0.0.1:8080/api/candlesticks?symbol=' + symbol + '&interval=' + interval + '&limit=100', {
 			method: 'GET'
 		}).then((res) => {
 			return res.json();

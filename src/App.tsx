@@ -1,21 +1,23 @@
-import React from 'react';
-import logo from './logo.svg';
+// import React from 'react';
+// import logo from './logo.svg';
 // import { Counter } from './features/counter/Counter';
 import './App.css';
-import ChartContainer from './components/chart/ChartContainer';
-import ScreenerContainer from './components/screener/ScreenerContainer';
-import OrderContainer from './components/order/OrderContainer';
-import Volatility from './modules/Volatility/Volatility';
+// import ChartContainer from './components/chart/ChartContainer';
+// import ScreenerContainer from './components/screener/ScreenerContainer';
+// import OrderContainer from './components/order/OrderContainer';
+// import Volatility from './components/volatility/Volatility';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import BotPage from './pages/bot';
-
-const symbols = ['ADAUSDT', 'ATOMUSDT', 'BATUSDT', 'BCHUSDT', 'BNBUSDT', 'BTCUSDT', 'DASHUSDT', 'DOGEUSDT', 'EOSUSDT', 'ETCUSDT', 'ETHUSDT', 'IOSTUSDT', 'IOTAUSDT', 'LINKUSDT', 'LTCUSDT', 'MATICUSDT', 'NEOUSDT', 'ONTUSDT', 'QTUMUSDT', 'RVNUSDT', 'TRXUSDT', 'VETUSDT', 'XLMUSDT', 'XMRUSDT', 'XRPUSDT', 'ZECUSDT', 'XTZUSDT'];
+import TradePage from './pages/trade';
+import ChartPage from './pages/chart';
 
 function App() {
     return (
 		<BrowserRouter>
 			<Routes>
                 <Route path="/bot" element={<BotPage />} />
+                <Route path="/trade" element={<TradePage />} />
+                <Route path="/chart" element={<ChartPage />} />
             </Routes>
 		</BrowserRouter>
 	);

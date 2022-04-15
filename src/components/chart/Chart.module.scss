@@ -1,0 +1,111 @@
+.canvasContainer {
+   position: relative;
+   height: 700px;
+   max-width: 90%;
+}
+
+.canvasContainer_moving {
+   cursor: grabbing;
+}
+
+.canvasWrap {
+   position: relative;
+   height: 100%;
+   overflow: hidden;
+   border: 1px solid #555555;
+}
+
+.canvas,
+.shadowCanvas,
+.linesCanvas {
+   width: 100%;
+   position: absolute;
+   top: 0;
+   right: 0;
+}
+
+.canvas {
+   z-index: 2;
+}
+
+.shadowCanvas {
+   opacity: .21;
+}
+
+.linesCanvas {
+   width: 100%;
+   z-index: 2;
+}
+
+.canvasWrap__inner {
+   position: absolute;
+   top: 0;
+   right: 0;
+   width: 100%;
+   height: 100%;
+}
+
+.rightBar {
+   position: absolute;
+   top: 0;
+   left: 100%;
+   width: 55px;
+   height: 100%;
+   overflow: hidden;
+}
+
+.rightBar__inner,
+.priceBar,
+.priceScaleBar {
+   position: absolute;
+   left: 0;
+   top: 0;
+   width: 100%;
+   height: 100%;
+}
+
+.priceBar {
+   z-index: 2;
+}
+
+.priceBar,
+.priceScaleBar,
+.canvas,
+.shadowCanvas,
+.linesCanvas {
+   height: 100%;
+}
+
+.paintingLayer {
+   z-index: 3;
+   overflow: hidden;
+   &,
+   &__inner {
+      position: absolute;
+      right: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+   }
+   &__controls{
+      position: absolute;
+      top: 0;
+      right: 0;
+      z-index: 2;
+   }
+}
+
+.paintingCanvasWrap {
+   width: 100%;
+   height: 100%;
+   position: absolute;
+   top: 0;
+   right: 0;
+   canvas{
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+   }
+}

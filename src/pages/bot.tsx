@@ -1,4 +1,4 @@
-import Bot from '../modules/Bot/Bot';
+import Bot from '../components/bot/Bot';
 
 export default function BotPage() {
     return <Bot />;
