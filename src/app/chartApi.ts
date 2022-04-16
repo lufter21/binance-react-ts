@@ -14,6 +14,16 @@ export const chartApi = createApi({
     reducerPath: 'chartApi',
     tagTypes: ['Chart'],
     endpoints: (build) => ({
+        getSymbols: build.query<string[], void>({
+            query: () => ({
+                url: 'fapi/v1/exchangeInfo'
+            }),
+
+            transformResponse: (response: any, meta, arg) => {
+                return response.symbols.map(s => s.symbol);
+            },
+        }),
+
         getCandlesTicks: build.query<Candle[], { symbol: string; limit: number; interval: string; }>({
             query: (req) => ({
                 url: 'fapi/v1/klines',
@@ -86,18 +96,7 @@ export const chartApi = createApi({
 
             providesTags: ['Chart'],
         }),
-        
-        botControl: build.mutation({
-            query: (body) => {
-                return {
-                    url: 'bot',
-                    method: 'POST',
-                    body,
-                };
-            },
-            invalidatesTags: ['Chart'],
-        }),
     }),
 });
 
-export const { useGetCandlesTicksQuery, useBotControlMutation } = chartApi;
+export const { useGetCandlesTicksQuery, useGetSymbolsQuery } = chartApi;

@@ -22,11 +22,11 @@ export class Coordinates {
         this.maxTime = opt.maxTime;
     }
 
-    getCoordinates(price: number, time: number): { x: number; y: number; } {
+    getCoordinates(price: number, time?: number): { x: number; y: number; } {
         const resX = this.canvW / (this.maxTime - this.minTime);
         const resY = this.canvH / (this.maxPrice - this.minPrice);
 
-        const x = Math.round((time - this.minTime) * resX);
+        const x = !time ? 0 : Math.round((time - this.minTime) * resX);
         const y = Math.round(this.canvH - (price - this.minPrice) * resY);
 
         return { x, y };

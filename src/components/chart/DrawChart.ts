@@ -3,15 +3,15 @@ import css from './Chart.module.scss';
 import { Coordinates } from './Coordinates';
 
 export class DrawChart {
-    isShadow: any;
+    isShadow: boolean;
     minPrice: number;
     maxPrice: number;
     candlesCount: number;
     candleWidth: number;
-    canvInEl: any;
+    canvInEl: HTMLDivElement;
     canvEl: HTMLCanvasElement;
-    priceScaleBarCanvEl: any;
-    priceBarCanvEl: any;
+    priceScaleBarCanvEl: HTMLCanvasElement;
+    priceBarCanvEl: HTMLCanvasElement;
     linesCanvEl: any;
     ctx: CanvasRenderingContext2D;
     linesCtx: CanvasRenderingContext2D;
@@ -19,7 +19,16 @@ export class DrawChart {
     priceScaleBarCtx: CanvasRenderingContext2D;
     coordsInstance: Coordinates;
 
-    constructor({ canvInEl, linesCanvEl, priceScaleBarCanvEl, priceBarCanvEl, isShadow, canvasWidth, canvasHeight, coordsInstance }: { canvInEl; linesCanvEl; priceScaleBarCanvEl; priceBarCanvEl; isShadow; canvasWidth; canvasHeight; coordsInstance; }) {
+    constructor({ canvInEl, linesCanvEl, priceScaleBarCanvEl, priceBarCanvEl, isShadow, canvasWidth, canvasHeight, coordsInstance }: {
+        canvInEl: HTMLDivElement;
+        linesCanvEl: HTMLCanvasElement;
+        priceScaleBarCanvEl: HTMLCanvasElement;
+        priceBarCanvEl: HTMLCanvasElement;
+        isShadow: boolean;
+        canvasWidth: number;
+        canvasHeight: number;
+        coordsInstance: Coordinates;
+    }) {
         this.isShadow = isShadow;
         this.minPrice = 0;
         this.maxPrice = 0;
@@ -38,14 +47,14 @@ export class DrawChart {
         this.canvInEl.appendChild(this.canvEl);
 
         this.canvEl.width = canvasWidth;
-        this.canvEl.height = this.canvEl.offsetHeight * 2;
+        this.canvEl.height = canvasHeight;
         this.canvEl.style.width = canvasWidth + 'px';
-        this.canvEl.style.height = this.canvEl.height + 'px';
+        this.canvEl.style.height = canvasHeight + 'px';
 
-        this.linesCanvEl.width = this.linesCanvEl.offsetWidth;
-        this.linesCanvEl.height = this.linesCanvEl.offsetHeight * 2;
-        this.linesCanvEl.style.width = this.linesCanvEl.width + 'px';
-        this.linesCanvEl.style.height = this.linesCanvEl.height + 'px';
+        this.linesCanvEl.width = canvasWidth;
+        this.linesCanvEl.height = canvasHeight;
+        this.linesCanvEl.style.width = canvasWidth + 'px';
+        this.linesCanvEl.style.height = canvasHeight + 'px';
 
         this.priceBarCanvEl.width = priceBarCanvEl.offsetWidth;
         this.priceBarCanvEl.height = priceBarCanvEl.offsetHeight;
@@ -89,8 +98,16 @@ export class DrawChart {
         this.priceScaleBarCtx.stroke();
     }
 
-    drawPriceLine(priceY, color) {
-        priceY = Math.ceil(priceY) + .5;
+    drawPriceLine(cdl: { openTime?: number; high?: number; open: any; close: any; low?: number; }) {
+        let color = '#555555';
+
+        if (cdl.open > cdl.close) {
+            color = '#ff0000';
+        } else {
+            color = '#008000';
+        }
+
+        const { x, y } = this.coordsInstance.getCoordinates(cdl.close);
 
         this.linesCtx.clearRect(0, 0, this.linesCanvEl.width, this.linesCanvEl.height);
 
@@ -99,12 +116,12 @@ export class DrawChart {
 
         this.linesCtx.beginPath();
         this.linesCtx.setLineDash([5, 2]);
-        this.linesCtx.moveTo(0, priceY);
-        this.linesCtx.lineTo(this.linesCanvEl.width, priceY);
+        this.linesCtx.moveTo(x, Math.round(y) + .5);
+        this.linesCtx.lineTo(this.linesCanvEl.width, Math.round(y) + .5);
         this.linesCtx.stroke();
     }
 
-    drawPrice(closePrice, priceY, color) {
+    drawPrice(closePrice: string, priceY: number, color: string | CanvasGradient | CanvasPattern) {
         priceY = Math.ceil(priceY);
 
         this.priceBarCtx.clearRect(0, 0, this.priceBarCanvEl.width, this.priceBarCanvEl.height);
@@ -175,7 +192,7 @@ export class DrawChart {
         // this.ctx.fillRect(shadowX, Math.round(shadowY), 1, Math.round(shadowH));
     }
 
-    draw(candles: Candle[], setPriceRange, reset) {
+    draw(candles: Candle[], setPriceRange: (arg0: { min: number; max: number; }) => void, reset: boolean) {
         if (reset) {
             this.candlesCount = 0;
             this.minPrice = 0;
@@ -183,6 +200,8 @@ export class DrawChart {
         }
 
         this.candlesCount = candles.length;
+
+        this.drawPriceLine(candles.slice(-1)[0]);
 
         // candles.forEach(obj => {
         //     if (obj.low < this.minPrice || !this.minPrice) {

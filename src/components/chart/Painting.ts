@@ -2,11 +2,12 @@ import { Coordinates } from './Coordinates';
 import { DrawChart } from './DrawChart';
 
 export class Painting {
+    id: string;
     canvasWrapEl: HTMLDivElement;
     canvEl: HTMLCanvasElement;
     ctx: CanvasRenderingContext2D;
     coordsInstance: Coordinates;
-    type: 'trendline' | 'level';
+    type: 'trends' | 'levels';
     maxPointsCount: number;
     points: {
         pointId: number;
@@ -16,19 +17,26 @@ export class Painting {
         },
         highlight?: boolean
     }[] = [];
+    sendFn: (opt: any) => any;
+    mC: (e: any) => void;
+    mM: (e: any) => void;
+    kD: (e: any) => void;
 
-    constructor({ canvasWrapEl, coordsInstance, canvasWidth, canvasHeight, type }: {
+    constructor({ canvasWrapEl, coordsInstance, canvasWidth, canvasHeight, type, sendFn }: {
         canvasWrapEl: HTMLDivElement;
         coordsInstance: Coordinates;
         canvasWidth: number;
         canvasHeight: number;
-        type: 'trendline' | 'level';
+        type: 'trends' | 'levels';
+        sendFn: (opt: any) => any;
     }) {
+        this.sendFn = sendFn;
+
         this.type = type;
 
-        if (this.type == 'trendline') {
+        if (this.type == 'trends') {
             this.maxPointsCount = 4;
-        } else if (this.type == 'level') {
+        } else if (this.type == 'levels') {
             this.maxPointsCount = 2;
         }
 
@@ -55,15 +63,15 @@ export class Painting {
             const rect = this.canvasWrapEl.getBoundingClientRect();
 
             return {
-                x: e.pageX - rect.left,
-                y: e.pageY - rect.top
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top
             };
         }
 
-        this.canvasWrapEl.addEventListener('click', (e) => {
+        this.mC = e => {
             const { x, y } = mouseCoords(e);
 
-            if (this.type == 'trendline') {
+            if (this.type == 'trends') {
                 if (this.points.length < this.maxPointsCount) {
                     this.setPoint({ pointId: this.points.length, x, y });
 
@@ -87,7 +95,7 @@ export class Painting {
                     }
                 }
 
-            } else if (this.type == 'level') {
+            } else if (this.type == 'levels') {
                 if (this.points.length < this.maxPointsCount) {
                     this.setPoint({ pointId: this.points.length, x, y });
                     this.setPoint({ pointId: this.points.length, x, y: y + 20 });
@@ -103,12 +111,12 @@ export class Painting {
                 }
             }
 
-        });
+        }
 
-        this.canvasWrapEl.addEventListener('mousemove', (e) => {
+        this.mM = e => {
             const { x, y } = mouseCoords(e);
 
-            if (this.type == 'trendline') {
+            if (this.type == 'trends') {
                 for (const point of this.points) {
                     if (point.highlight) {
 
@@ -139,7 +147,7 @@ export class Painting {
                     }
                 }
 
-            } else if (this.type == 'level') {
+            } else if (this.type == 'levels') {
                 for (const point of this.points) {
                     if (point.highlight) {
                         if (point.pointId == 0) {
@@ -155,10 +163,30 @@ export class Painting {
                 }
             }
 
-        });
+        }
+
+        this.kD = e => {
+            if (e.key == 'Delete') {
+                for (const point of this.points) {
+                    if (point.highlight == true) {
+                        this.sendPointsData('delete');
+                    }
+                }
+            }
+        }
+
+        this.canvasWrapEl.addEventListener('click', this.mC);
+        this.canvasWrapEl.addEventListener('mousemove', this.mM);
+        document.addEventListener('keydown', this.kD);
     }
 
-    setPoint(opt: { pointId: number; x?: number; y?: number; highlight?: boolean; }) {
+    setPoint(opt: {
+        pointId: number;
+        x?: number;
+        y?: number;
+        highlight?: boolean;
+        doNotSendData?: boolean;
+    }) {
         if (this.points.length < this.maxPointsCount) {
             this.points.push({
                 pointId: opt.pointId,
@@ -168,20 +196,26 @@ export class Painting {
                 }
             });
 
-            if (this.points.length == this.maxPointsCount) {
+            if (this.points.length == this.maxPointsCount && !opt.doNotSendData) {
                 this.sendPointsData();
             }
 
         } else {
+            let isHighlight = 0;
+
             for (const point of this.points) {
                 if (point.pointId == opt.pointId) {
                     point.highlight = opt.highlight !== undefined ? opt.highlight : point.highlight;
                     point.coords.x = opt.x !== undefined ? opt.x : point.coords.x;
                     point.coords.y = opt.y !== undefined ? opt.y : point.coords.y;
                 }
+
+                if (point.highlight) {
+                    isHighlight++;
+                }
             }
 
-            if (!opt.highlight) {
+            if (isHighlight === 0 && !opt.doNotSendData) {
                 this.sendPointsData();
             }
         }
@@ -193,13 +227,13 @@ export class Painting {
         this.ctx.clearRect(0, 0, this.canvEl.width, this.canvEl.height);
 
         if (this.points.length == this.maxPointsCount) {
-            if (this.type == 'trendline') {
+            if (this.type == 'trends') {
                 this.ctx.fillStyle = 'rgba(255,180,242,.35)';
                 this.ctx.beginPath();
-                this.ctx.moveTo(this.points[0].coords.x, this.points[0].coords.y);
-                this.ctx.lineTo(this.points[1].coords.x, this.points[1].coords.y);
-                this.ctx.lineTo(this.points[3].coords.x, this.points[3].coords.y);
-                this.ctx.lineTo(this.points[2].coords.x, this.points[2].coords.y);
+                this.ctx.moveTo(Math.round(this.points[0].coords.x), Math.round(this.points[0].coords.y));
+                this.ctx.lineTo(Math.round(this.points[1].coords.x), Math.round(this.points[1].coords.y));
+                this.ctx.lineTo(Math.round(this.points[3].coords.x), Math.round(this.points[3].coords.y));
+                this.ctx.lineTo(Math.round(this.points[2].coords.x), Math.round(this.points[2].coords.y));
                 this.ctx.closePath();
                 this.ctx.fill();
 
@@ -207,58 +241,83 @@ export class Painting {
                 this.ctx.strokeStyle = "#ff6800";
 
                 this.ctx.beginPath();
-                this.ctx.moveTo(this.points[0].coords.x, this.points[0].coords.y);
-                this.ctx.lineTo(this.points[1].coords.x, this.points[1].coords.y);
+                this.ctx.moveTo(Math.round(this.points[0].coords.x), Math.round(this.points[0].coords.y));
+                this.ctx.lineTo(Math.round(this.points[1].coords.x), Math.round(this.points[1].coords.y));
                 this.ctx.stroke();
 
                 this.ctx.strokeStyle = "#c3a0bd";
 
                 this.ctx.beginPath();
-                this.ctx.moveTo(this.points[2].coords.x, this.points[2].coords.y);
-                this.ctx.lineTo(this.points[3].coords.x, this.points[3].coords.y);
+                this.ctx.moveTo(Math.round(this.points[2].coords.x), Math.round(this.points[2].coords.y));
+                this.ctx.lineTo(Math.round(this.points[3].coords.x), Math.round(this.points[3].coords.y));
                 this.ctx.stroke();
 
-            } else if (this.type == 'level') {
+            } else if (this.type == 'levels') {
                 this.ctx.fillStyle = 'rgba(255,180,242,.35)';
                 this.ctx.beginPath();
                 this.ctx.moveTo(0, this.points[0].coords.y);
-                this.ctx.lineTo(this.canvEl.width, this.points[0].coords.y);
-                this.ctx.lineTo(this.canvEl.width, this.points[1].coords.y);
-                this.ctx.lineTo(0, this.points[1].coords.y);
+                this.ctx.lineTo(this.canvEl.width, Math.round(this.points[0].coords.y));
+                this.ctx.lineTo(this.canvEl.width, Math.round(this.points[1].coords.y));
+                this.ctx.lineTo(0, Math.round(this.points[1].coords.y));
                 this.ctx.closePath();
                 this.ctx.fill();
 
                 for (const point of this.points) {
                     this.ctx.strokeStyle = point.highlight ? '#35ff00' : (point.pointId == 1 ? '#c3a0bd' : '#ff6800');
+                    this.ctx.lineWidth = 1;
                     this.ctx.beginPath();
-                    this.ctx.moveTo(0, point.coords.y);
-                    this.ctx.lineTo(this.canvEl.width, point.coords.y);
+                    this.ctx.moveTo(0, Math.round(point.coords.y) + .5);
+                    this.ctx.lineTo(this.canvEl.width, Math.round(point.coords.y) + .5);
                     this.ctx.stroke();
                 }
 
             }
         }
 
-        if (this.type == 'trendline') {
+        if (this.type == 'trends') {
             for (const point of this.points) {
                 this.ctx.fillStyle = point.highlight ? '#35ff00' : (point.pointId > 1 ? '#c3a0bd' : '#ff6800');
                 this.ctx.beginPath();
-                this.ctx.arc(point.coords.x, point.coords.y, 3, 0, 2 * Math.PI);
+                this.ctx.arc(Math.round(point.coords.x), Math.round(point.coords.y), 3, 0, 2 * Math.PI);
                 this.ctx.fill();
             }
 
-        } else if (this.type == 'level') {
+        } else if (this.type == 'levels') {
             for (const point of this.points) {
                 this.ctx.fillStyle = point.highlight ? '#35ff00' : '#ff6800';
                 this.ctx.beginPath();
-                this.ctx.arc(point.coords.x, point.coords.y, 3, 0, 2 * Math.PI);
+                this.ctx.arc(Math.round(point.coords.x), Math.round(point.coords.y), 3, 0, 2 * Math.PI);
                 this.ctx.fill();
             }
         }
-
     }
 
-    sendPointsData() {
+    sendPointsData(opt?: string) {
+        if (opt == 'delete') {
+            const sendData = {
+                type: this.type,
+                removeId: this.id
+            };
+
+            this.sendFn(sendData);
+
+        } else if (this.type == 'levels') {
+            const sendData = {
+                type: this.type,
+                opt: {
+                    id: this.id,
+                    price: []
+                }
+            };
+
+            for (const point of this.points) {
+                const props = this.coordsInstance.getProps(point.coords.x, point.coords.y);
+                sendData.opt.price.push(props.price);
+            }
+
+            this.sendFn(sendData);
+        }
+
         const data: {
             price: number;
             time: number;
@@ -270,5 +329,33 @@ export class Painting {
         }
 
         console.log('send point data', data);
+    }
+
+    drawWithData(input: any) {
+        console.log(input);
+        if (this.type == 'levels') {
+            const inp: {
+                id: string;
+                price: number[];
+            } = input;
+
+            this.id = inp.id;
+
+            for (const price of inp.price) {
+                const { x, y } = this.coordsInstance.getCoordinates(price);
+
+                this.setPoint({ pointId: this.points.length, x, y, doNotSendData: true });
+            }
+
+        } else {
+
+        }
+    }
+
+    remove() {
+        this.canvasWrapEl.removeEventListener('click', this.mC);
+        this.canvasWrapEl.removeEventListener('mousemove', this.mM);
+        document.removeEventListener('keydown', this.kD);
+        this.canvEl.remove();
     }
 }

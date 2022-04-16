@@ -1,10 +1,11 @@
-import React, { useEffect, useRef } from 'react';
-import { useGetCandlesTicksQuery } from '../../app/chartApi';
+import React, { BaseSyntheticEvent, useEffect, useRef, useState } from 'react';
+import { useGetCandlesTicksQuery, useGetSymbolsQuery } from '../../app/chartApi';
 import { DrawChart } from './DrawChart';
 import css from './Chart.module.scss';
 import ReactDOM from 'react-dom';
 import { Painting } from './Painting';
 import { Coordinates } from './Coordinates';
+import { useGetTradeLinesQuery, useSetTradeLinesMutation } from '../../app/botApi';
 
 // move
 let startCursorPos = { X: 0, Y: 0 },
@@ -53,6 +54,9 @@ const moveCanvas = function (contEl, moveXEls, moveYEls) {
 }
 
 export default function Chart() {
+    const tradelinesDrawn = useRef<boolean>(false);
+    const tradelinesInstances = useRef<{ [id: string]: Painting }>({});
+    const maxPriceRef = useRef<number>(0);
     const coordsInstRef = useRef<Coordinates>();
     const chartInstRef = useRef<DrawChart>();
     const containerRef = useRef<HTMLDivElement>();
@@ -62,7 +66,27 @@ export default function Chart() {
     const priceScaleBarCanvasRef = useRef<HTMLCanvasElement>();
     const priceBarCanvasRef = useRef<HTMLCanvasElement>();
 
-    const { data } = useGetCandlesTicksQuery({ symbol: 'WAVESUSDT', limit: 50, interval: '1h' });
+    const [symbol, setSymbol] = useState(null);
+
+    // const symbol = 'WAVESUSDT';
+
+    const { data: symbols } = useGetSymbolsQuery();
+    const { data: tradelines } = useGetTradeLinesQuery({ symbol }, { skip: !symbol });
+    const { data } = useGetCandlesTicksQuery({ symbol, limit: 150, interval: '1h' }, { skip: !symbol });
+
+    const [setTradeLineMutat] = useSetTradeLinesMutation();
+
+    const setTradeLine = function (sendData: any) {
+        sendData.symbol = symbol;
+
+        if (sendData.removeId) {
+            tradelinesInstances.current[sendData.removeId].remove();
+            
+            delete tradelinesInstances.current[sendData.removeId];
+        }
+
+        setTradeLineMutat(sendData);
+    }
 
     useEffect(() => {
         const coords = new Coordinates({
@@ -93,6 +117,30 @@ export default function Chart() {
     }, []);
 
     useEffect(() => {
+        if (tradelines && maxPriceRef.current > 0 && !tradelinesDrawn.current) {
+            tradelinesDrawn.current = true;
+
+            const levels = tradelines.levels;
+
+            for (const lvl of levels) {
+                const pInst = new Painting({
+                    canvasWrapEl: paintingCanvasWrapRef.current,
+                    canvasWidth: 2000,
+                    canvasHeight: 1000,
+                    coordsInstance: coordsInstRef.current,
+                    type: 'levels',
+                    sendFn: setTradeLine
+                });
+
+                pInst.drawWithData(lvl);
+
+                tradelinesInstances.current[pInst.id] = pInst;
+            }
+
+        }
+    }, [tradelines, maxPriceRef.current]);
+
+    useEffect(() => {
         // if (isInitialMount.current) {
         //     isInitialMount.current = false;
 
@@ -102,21 +150,22 @@ export default function Chart() {
 
         // chartShadow.draw(props.shadowCandles);
 
-        if (data) {
-            let minPrice = 999999;
-            let maxPrice = 0;
+        if (data && data.length) {
 
-            for (const cdl of data) {
-                if (cdl.low < minPrice) {
-                    minPrice = cdl.low;
+            if (maxPriceRef.current === 0) {
+                let minPrice = 999999;
+                let maxPrice = 0;
+
+                for (const cdl of data) {
+                    if (cdl.low < minPrice) {
+                        minPrice = cdl.low;
+                    }
+
+                    if (cdl.high > maxPrice) {
+                        maxPrice = cdl.high;
+                    }
                 }
 
-                if (cdl.high > maxPrice) {
-                    maxPrice = cdl.high;
-                }
-            }
-
-            if (data.length) {
                 coordsInstRef.current.maxPrice = maxPrice + ((maxPrice - minPrice) / 2);
                 coordsInstRef.current.minPrice = minPrice - ((maxPrice - minPrice) / 2);
                 coordsInstRef.current.minTime = data[0].openTime;
@@ -125,30 +174,52 @@ export default function Chart() {
                 chartInstRef.current.minPrice = minPrice;
                 chartInstRef.current.maxPrice = maxPrice;
 
-                chartInstRef.current.draw(data, null, false);
+                maxPriceRef.current = maxPrice;
             }
+
+            chartInstRef.current.draw(data, null, false);
+
         }
     }, [data]);
 
     const addNewTrendline = function () {
-        new Painting({
+        const pInst = new Painting({
             canvasWrapEl: paintingCanvasWrapRef.current,
             canvasWidth: 2000,
             canvasHeight: 1000,
             coordsInstance: coordsInstRef.current,
-            type: 'trendline'
+            type: 'trends',
+            sendFn: setTradeLine
         });
+
+        pInst.id = symbol + Math.random() + 'trends';
+
+        tradelinesInstances.current[pInst.id] = pInst;
     }
 
     const addNewLevelLine = function () {
-        new Painting({
+        const pInst = new Painting({
             canvasWrapEl: paintingCanvasWrapRef.current,
             canvasWidth: 2000,
             canvasHeight: 1000,
             coordsInstance: coordsInstRef.current,
-            type: 'level'
+            type: 'levels',
+            sendFn: setTradeLine
         });
+
+        pInst.id = symbol + Math.random() + 'levels';
+
+        tradelinesInstances.current[pInst.id] = pInst;
     }
+
+    const selectSymbol = function (e: BaseSyntheticEvent) {
+        tradelinesDrawn.current = false;
+        maxPriceRef.current = 0;
+
+        setSymbol(e.target.value);
+    }
+
+    const selOpt = !!symbols && symbols.map(s => React.createElement('option', { key: s }, s));
 
     return (
         <div ref={containerRef} className={css.chartContainer}>
@@ -178,6 +249,11 @@ export default function Chart() {
                     </div>
                 </div>
             </div>
+
+            <select onChange={selectSymbol} className={css.select}>
+                <option></option>
+                {selOpt}
+            </select>
         </div>
     );
 }

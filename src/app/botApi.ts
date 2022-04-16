@@ -1,6 +1,26 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
 import { binanceWsApiUrl, serverApiBaseUrl, serverWsApiUrl } from './apiBaseUrl'
 
+type Tradelines = {
+    levels?: {
+        id: string;
+        price: number[];
+    }[];
+    trends?: {
+        id: string;
+        lines: {
+            start: {
+                price: number;
+                time: number;
+            };
+            end: {
+                price: number;
+                time: number;
+            };
+        }[];
+    }[];
+};
+
 export const botApi = createApi({
     baseQuery: fetchBaseQuery({ baseUrl: serverApiBaseUrl }),
     reducerPath: 'botApi',
@@ -45,17 +65,41 @@ export const botApi = createApi({
             },
             providesTags: ['Bot'],
         }),
+
         botControl: build.mutation({
-			query: (body) => {
-				return {
-					url: 'bot',
-					method: 'POST',
-					body,
-				};
-			},
-			invalidatesTags: ['Bot'],
-		}),
+            query: (body) => ({
+                url: 'bot',
+                method: 'POST',
+                body,
+            }),
+            invalidatesTags: ['Bot'],
+        }),
+
+        getTradeLines: build.query<Tradelines, { symbol: string; }>({
+            query: (req) => ({
+                url: 'tradelines',
+                params: req
+            })
+        }),
+
+        setTradeLines: build.mutation<Tradelines, {
+            type: 'trends' | 'levels';
+            symbol: string;
+            opt: any;
+            removeId: string;
+        }>({
+            query: (body) => ({
+                url: 'tradelines',
+                method: 'POST',
+                body,
+            })
+        }),
     }),
 });
 
-export const { useGetBotMessagesQuery, useBotControlMutation } = botApi;
+export const {
+    useGetBotMessagesQuery,
+    useBotControlMutation,
+    useGetTradeLinesQuery,
+    useSetTradeLinesMutation
+} = botApi;
