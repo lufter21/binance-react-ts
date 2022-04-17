@@ -3,7 +3,7 @@ import { useGetCandlesTicksQuery, useGetSymbolsQuery } from '../../app/chartApi'
 import { DrawChart } from './DrawChart';
 import css from './Chart.module.scss';
 import ReactDOM from 'react-dom';
-import { Painting } from './Painting';
+import { Drawing } from './Drawing';
 import { Coordinates } from './Coordinates';
 import { useGetTradeLinesQuery, useSetTradeLinesMutation } from '../../app/botApi';
 
@@ -54,8 +54,9 @@ const moveCanvas = function (contEl, moveXEls, moveYEls) {
 }
 
 export default function Chart() {
+    const canvasDims = useRef<number[]>([2000, 1000]);
     const tradelinesDrawn = useRef<boolean>(false);
-    const tradelinesInstances = useRef<{ [id: string]: Painting }>({});
+    const tradelinesInstances = useRef<{ [id: string]: Drawing }>({});
     const maxPriceRef = useRef<number>(0);
     const coordsInstRef = useRef<Coordinates>();
     const chartInstRef = useRef<DrawChart>();
@@ -70,9 +71,12 @@ export default function Chart() {
 
     // const symbol = 'WAVESUSDT';
 
-    const { data: symbols } = useGetSymbolsQuery();
-    const { data: tradelines } = useGetTradeLinesQuery({ symbol }, { skip: !symbol });
-    const { data } = useGetCandlesTicksQuery({ symbol, limit: 150, interval: '1h' }, { skip: !symbol });
+    const { data: _symbols } = useGetSymbolsQuery();
+
+    const symbols = _symbols && [..._symbols];
+
+    const { data: tradelines } = useGetTradeLinesQuery();
+    const { data } = useGetCandlesTicksQuery({ symbol, limit: 150, interval: '5m' }, { skip: !symbol });
 
     const [setTradeLineMutat] = useSetTradeLinesMutation();
 
@@ -81,7 +85,7 @@ export default function Chart() {
 
         if (sendData.removeId) {
             tradelinesInstances.current[sendData.removeId].remove();
-            
+
             delete tradelinesInstances.current[sendData.removeId];
         }
 
@@ -90,8 +94,8 @@ export default function Chart() {
 
     useEffect(() => {
         const coords = new Coordinates({
-            canvW: 2000,
-            canvH: 1000,
+            canvW: canvasDims.current[0],
+            canvH: canvasDims.current[1],
         });
 
         coordsInstRef.current = coords;
@@ -102,8 +106,8 @@ export default function Chart() {
             priceScaleBarCanvEl: priceScaleBarCanvasRef.current,
             priceBarCanvEl: priceBarCanvasRef.current,
             isShadow: false,
-            canvasWidth: 2000,
-            canvasHeight: 1000,
+            canvasWidth: canvasDims.current[0],
+            canvasHeight: canvasDims.current[1],
             coordsInstance: coords
         });
 
@@ -117,16 +121,17 @@ export default function Chart() {
     }, []);
 
     useEffect(() => {
-        if (tradelines && maxPriceRef.current > 0 && !tradelinesDrawn.current) {
+        if (symbol && tradelines && maxPriceRef.current > 0 && !tradelinesDrawn.current) {
             tradelinesDrawn.current = true;
 
-            const levels = tradelines.levels;
+            const levels = tradelines[symbol].levels;
+            const trends = tradelines[symbol].trends;
 
             for (const lvl of levels) {
-                const pInst = new Painting({
+                const pInst = new Drawing({
                     canvasWrapEl: paintingCanvasWrapRef.current,
-                    canvasWidth: 2000,
-                    canvasHeight: 1000,
+                    canvasWidth: canvasDims.current[0],
+                    canvasHeight: canvasDims.current[1],
                     coordsInstance: coordsInstRef.current,
                     type: 'levels',
                     sendFn: setTradeLine
@@ -137,8 +142,23 @@ export default function Chart() {
                 tradelinesInstances.current[pInst.id] = pInst;
             }
 
+            for (const trd of trends) {
+                const pInst = new Drawing({
+                    canvasWrapEl: paintingCanvasWrapRef.current,
+                    canvasWidth: canvasDims.current[0],
+                    canvasHeight: canvasDims.current[1],
+                    coordsInstance: coordsInstRef.current,
+                    type: 'trends',
+                    sendFn: setTradeLine
+                });
+
+                pInst.drawWithData(trd);
+
+                tradelinesInstances.current[pInst.id] = pInst;
+            }
+
         }
-    }, [tradelines, maxPriceRef.current]);
+    }, [tradelines, maxPriceRef.current, symbol]);
 
     useEffect(() => {
         // if (isInitialMount.current) {
@@ -183,10 +203,10 @@ export default function Chart() {
     }, [data]);
 
     const addNewTrendline = function () {
-        const pInst = new Painting({
+        const pInst = new Drawing({
             canvasWrapEl: paintingCanvasWrapRef.current,
-            canvasWidth: 2000,
-            canvasHeight: 1000,
+            canvasWidth: canvasDims.current[0],
+            canvasHeight: canvasDims.current[1],
             coordsInstance: coordsInstRef.current,
             type: 'trends',
             sendFn: setTradeLine
@@ -198,10 +218,10 @@ export default function Chart() {
     }
 
     const addNewLevelLine = function () {
-        const pInst = new Painting({
+        const pInst = new Drawing({
             canvasWrapEl: paintingCanvasWrapRef.current,
-            canvasWidth: 2000,
-            canvasHeight: 1000,
+            canvasWidth: canvasDims.current[0],
+            canvasHeight: canvasDims.current[1],
             coordsInstance: coordsInstRef.current,
             type: 'levels',
             sendFn: setTradeLine
@@ -219,7 +239,13 @@ export default function Chart() {
         setSymbol(e.target.value);
     }
 
-    const selOpt = !!symbols && symbols.map(s => React.createElement('option', { key: s }, s));
+    symbols && symbols.sort((a: string, b: string) => {
+        if (a < b) { return -1; }
+        if (a > b) { return 1; }
+        return 0;
+    });
+
+    const selOpt = symbols && symbols.map(s => React.createElement('option', { key: s }, s));
 
     return (
         <div ref={containerRef} className={css.chartContainer}>
@@ -233,9 +259,9 @@ export default function Chart() {
 
                 <div className={css.paintingLayer}>
                     <div className={css.paintingLayer__controls}>
-                        <p>Painting</p>
-                        <button onClick={addNewTrendline}>Trandline</button>
-                        <button onClick={addNewLevelLine}>Level line</button>
+                        <p>Drawing</p>
+                        <button onClick={addNewTrendline}>Trend</button>
+                        <button onClick={addNewLevelLine}>Level</button>
                     </div>
                     <div className={css.paintingLayer__inner + ' move-axis-x move-axis-y'}>
                         <div ref={paintingCanvasWrapRef} className={css.paintingCanvasWrap}> </div>

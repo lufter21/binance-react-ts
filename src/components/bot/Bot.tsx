@@ -1,4 +1,6 @@
+import React, { BaseSyntheticEvent, useState } from 'react';
 import { useBotControlMutation, useGetBotMessagesQuery } from '../../app/botApi';
+import { useGetSymbolsQuery } from '../../app/chartApi';
 
 const StrItem = function (props: any) {
     return (
@@ -84,6 +86,11 @@ const PosItem = function (props: any) {
 }
 
 export default function Bot() {
+    const { data: _symbols } = useGetSymbolsQuery();
+    const symbols = _symbols && [..._symbols];
+
+    const [tradingSymbols, setTradingSymbols] = useState<string[]>([]);
+
     const { data, isFetching, isSuccess } = useGetBotMessagesQuery();
     const [botControl] = useBotControlMutation();
 
@@ -101,12 +108,42 @@ export default function Bot() {
         botControl({ reuseStrategy: true });
     }
 
-    return (isFetching || !isSuccess) ? <p>Loading...</p> : (
+    const selectSymbol = function (e: BaseSyntheticEvent) {
+        // const tS = [...tradingSymbols];
+        // tS.push(e.target.value);
+        tradingSymbols.push(e.target.value);
+        console.log(tradingSymbols);
+        setTradingSymbols(tradingSymbols);
+    }
+
+    symbols && symbols.sort((a: string, b: string) => {
+        if (a < b) { return -1; }
+        if (a > b) { return 1; }
+        return 0;
+    });
+
+    const selOpt = symbols && symbols.map(s => React.createElement('option', { key: s }, s));
+    const tradingSymbolsView = tradingSymbols.map(s => React.createElement('p', { key: s }, s));
+
+    return (
         <>
             <h1>Bot module</h1>
             <button onClick={posMake}> Position Making </button>
-            {!data.controls.resolvePositionMaking && ' is OFF'}
-            {data.controls.resolvePositionMaking && ' is ON'}
+            {!!data && !data.controls.resolvePositionMaking && ' is OFF'}
+            {!!data && data.controls.resolvePositionMaking && ' is ON'}
+
+            <h2>Chose trading symbols</h2>
+            <p>
+                <select onChange={selectSymbol}>
+                    <option></option>
+                    {selOpt}
+                </select>
+            </p>
+            <h2>Trading symbols</h2>
+            <p>
+                {tradingSymbolsView} 
+            </p>
+
 
             <p>
                 <button onClick={reuseStr}> Reuse Strategy </button>

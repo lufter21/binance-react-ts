@@ -33,7 +33,6 @@ export class DrawChart {
         this.minPrice = 0;
         this.maxPrice = 0;
         this.candlesCount = 0;
-        this.candleWidth = 9;
 
         this.canvInEl = canvInEl;
 
@@ -57,7 +56,8 @@ export class DrawChart {
         this.linesCanvEl.style.height = canvasHeight + 'px';
 
         this.priceBarCanvEl.width = priceBarCanvEl.offsetWidth;
-        this.priceBarCanvEl.height = priceBarCanvEl.offsetHeight;
+        this.priceBarCanvEl.height = canvasHeight;
+        this.priceBarCanvEl.style.height = canvasHeight + 'px';
 
         this.priceScaleBarCanvEl.width = priceScaleBarCanvEl.offsetWidth;
         this.priceScaleBarCanvEl.height = priceScaleBarCanvEl.offsetHeight;
@@ -98,7 +98,7 @@ export class DrawChart {
         this.priceScaleBarCtx.stroke();
     }
 
-    drawPriceLine(cdl: { openTime?: number; high?: number; open: any; close: any; low?: number; }) {
+    drawPriceLine(cdl: Candle) {
         let color = '#555555';
 
         if (cdl.open > cdl.close) {
@@ -121,40 +121,7 @@ export class DrawChart {
         this.linesCtx.stroke();
     }
 
-    drawPrice(closePrice: string, priceY: number, color: string | CanvasGradient | CanvasPattern) {
-        priceY = Math.ceil(priceY);
-
-        this.priceBarCtx.clearRect(0, 0, this.priceBarCanvEl.width, this.priceBarCanvEl.height);
-
-        this.priceBarCtx.fillStyle = color;
-        this.priceBarCtx.fillRect(0, priceY - 10, this.priceBarCanvEl.width, 20);
-
-        this.priceBarCtx.fillStyle = '#ffffff';
-        this.priceBarCtx.font = '12px sans-serif';
-        this.priceBarCtx.textAlign = 'center';
-        this.priceBarCtx.fillText(closePrice, this.priceBarCanvEl.width / 2, priceY + 4);
-    }
-
-    drawCandle(i: number, cdl: Candle): void {
-
-        // const pix = this.canvEl.height / (this.maxPrice - this.minPrice);
-
-        // const bodyX = (this.isShadow)
-        //     ? (i * this.candleWidth + this.candleWidth * i) - this.candleWidth
-        //     : i * this.candleWidth + this.candleWidth * i;
-
-        // const bodyY = this.canvEl.height - ((obj.open - this.minPrice) * pix);
-
-        // const closeY = this.canvEl.height - ((obj.close - this.minPrice) * pix);
-
-        // const shadowX = bodyX + (Math.floor(this.candleWidth / 2));
-
-        // const shadowY = this.canvEl.height - ((obj.high - this.minPrice) * pix);
-
-        // const shadowH = (this.canvEl.height - ((obj.low - this.minPrice) * pix)) - shadowY;
-
-        // let bodyH = closeY - bodyY;
-
+    drawPrice(cdl: Candle) {
         let color = '#555555';
 
         if (cdl.open > cdl.close) {
@@ -163,33 +130,37 @@ export class DrawChart {
             color = '#008000';
         }
 
-        // if (!i) {
-        //     this.ctx.clearRect(0, 0, this.canvEl.width, this.canvEl.height);
-        // } else if (i === this.candlesCount - 1) {
-        //     this.drawPriceLine(closeY, color);
-        //     this.drawPrice(obj.close, closeY, color);
-        // }
+        const Y = this.coordsInstance.getCoordinates(cdl.close).y;
 
-        // bodyH = Math.ceil(bodyH);
+        this.priceBarCtx.clearRect(0, 0, this.priceBarCanvEl.width, this.priceBarCanvEl.height);
 
-        // if (!bodyH) {
-        //     bodyH = 1;
-        // }
+        this.priceBarCtx.fillStyle = color;
+        this.priceBarCtx.fillRect(0, Y - 10, this.priceBarCanvEl.width, 20);
+
+        this.priceBarCtx.fillStyle = '#ffffff';
+        this.priceBarCtx.font = '12px sans-serif';
+        this.priceBarCtx.textAlign = 'center';
+        this.priceBarCtx.fillText(String(cdl.close), this.priceBarCanvEl.width / 2, Y + 4);
+    }
+
+    drawCandle(i: number, cdl: Candle): void {
+        let color = '#555555';
+
+        if (cdl.open > cdl.close) {
+            color = '#ff0000';
+        } else {
+            color = '#008000';
+        }
 
         const open = this.coordsInstance.getCoordinates(cdl.open, cdl.openTime);
         const close = this.coordsInstance.getCoordinates(cdl.close, cdl.openTime);
         const high = this.coordsInstance.getCoordinates(cdl.high, cdl.openTime);
         const low = this.coordsInstance.getCoordinates(cdl.low, cdl.openTime);
 
-        // this.ctx.fillStyle = color;
-        // this.ctx.fillRect(bodyX, Math.round(bodyY), this.candleWidth, Math.ceil(bodyH));
-        // this.ctx.fillRect(shadowX, Math.round(shadowY), 1, Math.round(shadowH));
-
         this.ctx.fillStyle = color;
-        this.ctx.fillRect(open.x, open.y, this.candleWidth, close.y - open.y);
-        this.ctx.fillRect(Math.floor(high.x + this.candleWidth / 2), high.y, 1, low.y - high.y);
+        this.ctx.fillRect(open.x, open.y, this.candleWidth, close.y - open.y || 1);
+        this.ctx.fillRect(Math.floor(high.x + this.candleWidth / 2), high.y, 1, low.y - high.y || 1);
 
-        // this.ctx.fillRect(shadowX, Math.round(shadowY), 1, Math.round(shadowH));
     }
 
     draw(candles: Candle[], setPriceRange: (arg0: { min: number; max: number; }) => void, reset: boolean) {
@@ -201,7 +172,10 @@ export class DrawChart {
 
         this.candlesCount = candles.length;
 
-        this.drawPriceLine(candles.slice(-1)[0]);
+        const lastCandle = candles.slice(-1)[0];
+
+        this.drawPriceLine(lastCandle);
+        this.drawPrice(lastCandle);
 
         // candles.forEach(obj => {
         //     if (obj.low < this.minPrice || !this.minPrice) {
@@ -235,6 +209,8 @@ export class DrawChart {
         // this.coords.maxTime = candles[candles.length - 1].openTime;
 
         this.ctx.clearRect(0, 0, this.canvEl.width, this.canvEl.height);
+
+        this.candleWidth = Math.floor(this.coordsInstance.getCoordinates(candles[1].open, candles[1].openTime).x - this.coordsInstance.getCoordinates(candles[0].open, candles[0].openTime).x - 2);
 
         candles.forEach((obj, i) => {
             this.drawCandle(i, obj);

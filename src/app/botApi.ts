@@ -2,23 +2,25 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
 import { binanceWsApiUrl, serverApiBaseUrl, serverWsApiUrl } from './apiBaseUrl'
 
 type Tradelines = {
-    levels?: {
-        id: string;
-        price: number[];
-    }[];
-    trends?: {
-        id: string;
-        lines: {
-            start: {
-                price: number;
-                time: number;
-            };
-            end: {
-                price: number;
-                time: number;
-            };
+    [symbol: string]: {
+        levels?: {
+            id: string;
+            price: number[];
         }[];
-    }[];
+        trends?: {
+            id: string;
+            lines: {
+                start: {
+                    price: number;
+                    time: number;
+                };
+                end: {
+                    price: number;
+                    time: number;
+                };
+            }[];
+        }[];
+    };
 };
 
 export const botApi = createApi({
@@ -75,11 +77,8 @@ export const botApi = createApi({
             invalidatesTags: ['Bot'],
         }),
 
-        getTradeLines: build.query<Tradelines, { symbol: string; }>({
-            query: (req) => ({
-                url: 'tradelines',
-                params: req
-            })
+        getTradeLines: build.query<Tradelines, void>({
+            query: () => ({url: 'tradelines'})
         }),
 
         setTradeLines: build.mutation<Tradelines, {

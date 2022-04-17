@@ -1,7 +1,7 @@
 import { Coordinates } from './Coordinates';
 import { DrawChart } from './DrawChart';
 
-export class Painting {
+export class Drawing {
     id: string;
     canvasWrapEl: HTMLDivElement;
     canvEl: HTMLCanvasElement;
@@ -21,6 +21,7 @@ export class Painting {
     mC: (e: any) => void;
     mM: (e: any) => void;
     kD: (e: any) => void;
+    moving: boolean = false;
 
     constructor({ canvasWrapEl, coordsInstance, canvasWidth, canvasHeight, type, sendFn }: {
         canvasWrapEl: HTMLDivElement;
@@ -79,10 +80,12 @@ export class Painting {
                         for (const point of this.points) {
                             this.setPoint({
                                 pointId: this.points.length,
-                                x: point.coords.x + 10,
-                                y: point.coords.y
+                                x: point.coords.x,
+                                y: point.coords.y - 25
                             });
                         }
+
+                        this.moving = true;
                     }
 
                 } else {
@@ -91,6 +94,7 @@ export class Painting {
 
                         if (pX - 7 < x && x < pX + 7 && pY - 7 < y && y < pY + 7) {
                             this.setPoint({ pointId: point.pointId, highlight: !point.highlight });
+                            this.moving = true;
                         }
                     }
                 }
@@ -98,7 +102,8 @@ export class Painting {
             } else if (this.type == 'levels') {
                 if (this.points.length < this.maxPointsCount) {
                     this.setPoint({ pointId: this.points.length, x, y });
-                    this.setPoint({ pointId: this.points.length, x, y: y + 20 });
+                    this.setPoint({ pointId: this.points.length, x, y: y - 25 });
+                    this.moving = true;
 
                 } else {
                     for (const point of this.points) {
@@ -106,9 +111,23 @@ export class Painting {
 
                         if (pY - 7 < y && y < pY + 7) {
                             this.setPoint({ pointId: point.pointId, highlight: !point.highlight });
+                            this.moving = true;
                         }
                     }
                 }
+            }
+
+            let isHighlight = 0;
+
+            for (const point of this.points) {
+                if (point.highlight) {
+                    isHighlight++;
+                }
+            }
+
+            if (isHighlight === 0 && this.points.length == this.maxPointsCount && this.moving) {
+                this.moving = false;
+                this.sendPointsData();
             }
 
         }
@@ -168,7 +187,7 @@ export class Painting {
         this.kD = e => {
             if (e.key == 'Delete') {
                 for (const point of this.points) {
-                    if (point.highlight == true) {
+                    if (point.highlight == true && this.moving) {
                         this.sendPointsData('delete');
                     }
                 }
@@ -191,32 +210,18 @@ export class Painting {
             this.points.push({
                 pointId: opt.pointId,
                 coords: {
-                    x: opt.x,
-                    y: opt.y
+                    x: Math.round(opt.x),
+                    y: Math.round(opt.y)
                 }
             });
 
-            if (this.points.length == this.maxPointsCount && !opt.doNotSendData) {
-                this.sendPointsData();
-            }
-
         } else {
-            let isHighlight = 0;
-
             for (const point of this.points) {
                 if (point.pointId == opt.pointId) {
                     point.highlight = opt.highlight !== undefined ? opt.highlight : point.highlight;
-                    point.coords.x = opt.x !== undefined ? opt.x : point.coords.x;
-                    point.coords.y = opt.y !== undefined ? opt.y : point.coords.y;
+                    point.coords.x = opt.x !== undefined ? Math.round(opt.x) : point.coords.x;
+                    point.coords.y = opt.y !== undefined ? Math.round(opt.y) : point.coords.y;
                 }
-
-                if (point.highlight) {
-                    isHighlight++;
-                }
-            }
-
-            if (isHighlight === 0 && !opt.doNotSendData) {
-                this.sendPointsData();
             }
         }
 
@@ -230,10 +235,10 @@ export class Painting {
             if (this.type == 'trends') {
                 this.ctx.fillStyle = 'rgba(255,180,242,.35)';
                 this.ctx.beginPath();
-                this.ctx.moveTo(Math.round(this.points[0].coords.x), Math.round(this.points[0].coords.y));
-                this.ctx.lineTo(Math.round(this.points[1].coords.x), Math.round(this.points[1].coords.y));
-                this.ctx.lineTo(Math.round(this.points[3].coords.x), Math.round(this.points[3].coords.y));
-                this.ctx.lineTo(Math.round(this.points[2].coords.x), Math.round(this.points[2].coords.y));
+                this.ctx.moveTo(this.points[0].coords.x, this.points[0].coords.y);
+                this.ctx.lineTo(this.points[1].coords.x, this.points[1].coords.y);
+                this.ctx.lineTo(this.points[3].coords.x, this.points[3].coords.y);
+                this.ctx.lineTo(this.points[2].coords.x, this.points[2].coords.y);
                 this.ctx.closePath();
                 this.ctx.fill();
 
@@ -241,24 +246,24 @@ export class Painting {
                 this.ctx.strokeStyle = "#ff6800";
 
                 this.ctx.beginPath();
-                this.ctx.moveTo(Math.round(this.points[0].coords.x), Math.round(this.points[0].coords.y));
-                this.ctx.lineTo(Math.round(this.points[1].coords.x), Math.round(this.points[1].coords.y));
+                this.ctx.moveTo(this.points[0].coords.x, this.points[0].coords.y);
+                this.ctx.lineTo(this.points[1].coords.x, this.points[1].coords.y);
                 this.ctx.stroke();
 
                 this.ctx.strokeStyle = "#c3a0bd";
 
                 this.ctx.beginPath();
-                this.ctx.moveTo(Math.round(this.points[2].coords.x), Math.round(this.points[2].coords.y));
-                this.ctx.lineTo(Math.round(this.points[3].coords.x), Math.round(this.points[3].coords.y));
+                this.ctx.moveTo(this.points[2].coords.x, this.points[2].coords.y);
+                this.ctx.lineTo(this.points[3].coords.x, this.points[3].coords.y);
                 this.ctx.stroke();
 
             } else if (this.type == 'levels') {
                 this.ctx.fillStyle = 'rgba(255,180,242,.35)';
                 this.ctx.beginPath();
                 this.ctx.moveTo(0, this.points[0].coords.y);
-                this.ctx.lineTo(this.canvEl.width, Math.round(this.points[0].coords.y));
-                this.ctx.lineTo(this.canvEl.width, Math.round(this.points[1].coords.y));
-                this.ctx.lineTo(0, Math.round(this.points[1].coords.y));
+                this.ctx.lineTo(this.canvEl.width, this.points[0].coords.y);
+                this.ctx.lineTo(this.canvEl.width, this.points[1].coords.y);
+                this.ctx.lineTo(0, this.points[1].coords.y);
                 this.ctx.closePath();
                 this.ctx.fill();
 
@@ -266,8 +271,8 @@ export class Painting {
                     this.ctx.strokeStyle = point.highlight ? '#35ff00' : (point.pointId == 1 ? '#c3a0bd' : '#ff6800');
                     this.ctx.lineWidth = 1;
                     this.ctx.beginPath();
-                    this.ctx.moveTo(0, Math.round(point.coords.y) + .5);
-                    this.ctx.lineTo(this.canvEl.width, Math.round(point.coords.y) + .5);
+                    this.ctx.moveTo(0, point.coords.y + .5);
+                    this.ctx.lineTo(this.canvEl.width, point.coords.y + .5);
                     this.ctx.stroke();
                 }
 
@@ -278,7 +283,7 @@ export class Painting {
             for (const point of this.points) {
                 this.ctx.fillStyle = point.highlight ? '#35ff00' : (point.pointId > 1 ? '#c3a0bd' : '#ff6800');
                 this.ctx.beginPath();
-                this.ctx.arc(Math.round(point.coords.x), Math.round(point.coords.y), 3, 0, 2 * Math.PI);
+                this.ctx.arc(point.coords.x, point.coords.y, 3, 0, 2 * Math.PI);
                 this.ctx.fill();
             }
 
@@ -286,7 +291,7 @@ export class Painting {
             for (const point of this.points) {
                 this.ctx.fillStyle = point.highlight ? '#35ff00' : '#ff6800';
                 this.ctx.beginPath();
-                this.ctx.arc(Math.round(point.coords.x), Math.round(point.coords.y), 3, 0, 2 * Math.PI);
+                this.ctx.arc(point.coords.x, point.coords.y, 3, 0, 2 * Math.PI);
                 this.ctx.fill();
             }
         }
@@ -316,19 +321,28 @@ export class Painting {
             }
 
             this.sendFn(sendData);
+
+        } else if (this.type == 'trends') {
+            const sendData = {
+                type: this.type,
+                opt: {
+                    id: this.id,
+                    lines: []
+                }
+            };
+
+            sendData.opt.lines.push({
+                start: this.coordsInstance.getProps(this.points[0].coords.x, this.points[0].coords.y),
+                end: this.coordsInstance.getProps(this.points[1].coords.x, this.points[1].coords.y)
+            });
+
+            sendData.opt.lines.push({
+                start: this.coordsInstance.getProps(this.points[2].coords.x, this.points[2].coords.y),
+                end: this.coordsInstance.getProps(this.points[3].coords.x, this.points[3].coords.y)
+            });
+
+            this.sendFn(sendData);
         }
-
-        const data: {
-            price: number;
-            time: number;
-        }[] = [];
-
-        for (const point of this.points) {
-            const props = this.coordsInstance.getProps(point.coords.x, point.coords.y);
-            data.push(props);
-        }
-
-        console.log('send point data', data);
     }
 
     drawWithData(input: any) {
