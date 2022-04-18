@@ -1,6 +1,6 @@
 import React, { BaseSyntheticEvent, useState } from 'react';
 import { useBotControlMutation, useGetBotMessagesQuery } from '../../app/botApi';
-import { useGetSymbolsQuery } from '../../app/chartApi';
+import { useGetSymbolsQuery } from '../../app/binanceApi';
 
 const StrItem = function (props: any) {
     return (
@@ -85,14 +85,30 @@ const PosItem = function (props: any) {
     );
 }
 
+const TradingSymbol = function (props: {
+    removeTradingSymbol: (name: string) => void;
+    name: string;
+}) {
+    const remove = function () {
+        props.removeTradingSymbol(props.name);
+    }
+
+    return (
+        <li>
+            {props.name}
+            <button onClick={remove}>X</button>
+        </li>
+    );
+}
+
 export default function Bot() {
-    const { data: _symbols } = useGetSymbolsQuery();
-    const symbols = _symbols && [..._symbols];
-
-    const [tradingSymbols, setTradingSymbols] = useState<string[]>([]);
-
+    // const { data: _symbols } = useGetSymbolsQuery();
+    // const symbols = _symbols && [..._symbols];
+    
     const { data, isFetching, isSuccess } = useGetBotMessagesQuery();
     const [botControl] = useBotControlMutation();
+
+    const symbols = data && [...data.availableSymbols];
 
     const strategies = (isSuccess && !!data.strategy) &&
         data.strategy.map((item: any) => <StrItem {...item} />);
@@ -101,19 +117,27 @@ export default function Bot() {
         data.positions.map((item: any) => <PosItem {...item} />);
 
     const posMake = function () {
-        botControl({ resolvePositionMaking: !data.controls.resolvePositionMaking });
+        botControl({ resolvePositionMaking: !data.resolvePositionMaking });
     }
 
     const reuseStr = function () {
         botControl({ reuseStrategy: true });
     }
 
-    const selectSymbol = function (e: BaseSyntheticEvent) {
-        // const tS = [...tradingSymbols];
-        // tS.push(e.target.value);
-        tradingSymbols.push(e.target.value);
-        console.log(tradingSymbols);
-        setTradingSymbols(tradingSymbols);
+    const setTradingSymbol = function (e: BaseSyntheticEvent) {
+        const trSymb = new Set<string>(data.tradingSymbols);
+
+        trSymb.add(e.target.value);
+
+        botControl({ tradingSymbols: Array.from(trSymb) });
+    }
+
+    const removeTradingSymbol = function (name) {
+        const trSymb = new Set<string>(data.tradingSymbols);
+
+        trSymb.delete(name);
+
+        botControl({ tradingSymbols: Array.from(trSymb) });
     }
 
     symbols && symbols.sort((a: string, b: string) => {
@@ -123,26 +147,29 @@ export default function Bot() {
     });
 
     const selOpt = symbols && symbols.map(s => React.createElement('option', { key: s }, s));
-    const tradingSymbolsView = tradingSymbols.map(s => React.createElement('p', { key: s }, s));
+
+    const tradingSymbolsView = data && data.tradingSymbols.map((sym: string) => {
+        return <TradingSymbol removeTradingSymbol={removeTradingSymbol} name={sym} key={sym} />;
+    });
 
     return (
         <>
             <h1>Bot module</h1>
             <button onClick={posMake}> Position Making </button>
-            {!!data && !data.controls.resolvePositionMaking && ' is OFF'}
-            {!!data && data.controls.resolvePositionMaking && ' is ON'}
+            {!!data && !data.resolvePositionMaking && ' is OFF'}
+            {!!data && data.resolvePositionMaking && ' is ON'}
 
             <h2>Chose trading symbols</h2>
             <p>
-                <select onChange={selectSymbol}>
+                <select onChange={setTradingSymbol}>
                     <option></option>
                     {selOpt}
                 </select>
             </p>
             <h2>Trading symbols</h2>
-            <p>
-                {tradingSymbolsView} 
-            </p>
+            <ul>
+                {tradingSymbolsView}
+            </ul>
 
 
             <p>

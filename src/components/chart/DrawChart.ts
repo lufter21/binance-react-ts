@@ -1,4 +1,4 @@
-import { Candle } from '../../app/chartApi';
+import { Candle } from '../../app/binanceApi';
 import css from './Chart.module.scss';
 import { Coordinates } from './Coordinates';
 
@@ -12,16 +12,19 @@ export class DrawChart {
     canvEl: HTMLCanvasElement;
     priceScaleBarCanvEl: HTMLCanvasElement;
     priceBarCanvEl: HTMLCanvasElement;
-    linesCanvEl: any;
+    linesCanvEl: HTMLCanvasElement;
+    horVolumeCanvEl: HTMLCanvasElement;
     ctx: CanvasRenderingContext2D;
     linesCtx: CanvasRenderingContext2D;
     priceBarCtx: CanvasRenderingContext2D;
     priceScaleBarCtx: CanvasRenderingContext2D;
     coordsInstance: Coordinates;
+    horVolumeCtx: CanvasRenderingContext2D;
 
-    constructor({ canvInEl, linesCanvEl, priceScaleBarCanvEl, priceBarCanvEl, isShadow, canvasWidth, canvasHeight, coordsInstance }: {
+    constructor({ canvInEl, linesCanvEl, horVolumeCanvEl, priceScaleBarCanvEl, priceBarCanvEl, isShadow, canvasWidth, canvasHeight, coordsInstance }: {
         canvInEl: HTMLDivElement;
         linesCanvEl: HTMLCanvasElement;
+        horVolumeCanvEl: HTMLCanvasElement;
         priceScaleBarCanvEl: HTMLCanvasElement;
         priceBarCanvEl: HTMLCanvasElement;
         isShadow: boolean;
@@ -40,6 +43,7 @@ export class DrawChart {
         this.priceScaleBarCanvEl = priceScaleBarCanvEl;
         this.priceBarCanvEl = priceBarCanvEl;
         this.linesCanvEl = linesCanvEl;
+        this.horVolumeCanvEl = horVolumeCanvEl;
 
         this.canvEl.classList.add((isShadow) ? css.shadowCanvas : css.canvas);
 
@@ -50,10 +54,13 @@ export class DrawChart {
         this.canvEl.style.width = canvasWidth + 'px';
         this.canvEl.style.height = canvasHeight + 'px';
 
-        this.linesCanvEl.width = canvasWidth;
+        this.linesCanvEl.width = this.linesCanvEl.offsetWidth;
         this.linesCanvEl.height = canvasHeight;
-        this.linesCanvEl.style.width = canvasWidth + 'px';
         this.linesCanvEl.style.height = canvasHeight + 'px';
+
+        this.horVolumeCanvEl.width = this.horVolumeCanvEl.offsetWidth;
+        this.horVolumeCanvEl.height = canvasHeight;
+        this.horVolumeCanvEl.style.height = canvasHeight + 'px';
 
         this.priceBarCanvEl.width = priceBarCanvEl.offsetWidth;
         this.priceBarCanvEl.height = canvasHeight;
@@ -64,6 +71,7 @@ export class DrawChart {
 
         this.ctx = this.canvEl.getContext('2d');
         this.linesCtx = linesCanvEl.getContext('2d');
+        this.horVolumeCtx = this.horVolumeCanvEl.getContext('2d');
         this.priceBarCtx = priceBarCanvEl.getContext('2d');
         this.priceScaleBarCtx = priceScaleBarCanvEl.getContext('2d');
 
@@ -210,10 +218,36 @@ export class DrawChart {
 
         this.ctx.clearRect(0, 0, this.canvEl.width, this.canvEl.height);
 
-        this.candleWidth = Math.floor(this.coordsInstance.getCoordinates(candles[1].open, candles[1].openTime).x - this.coordsInstance.getCoordinates(candles[0].open, candles[0].openTime).x - 2);
+        this.candleWidth = this.coordsInstance.getCoordinates(candles[1].open, candles[1].openTime).x - this.coordsInstance.getCoordinates(candles[0].open, candles[0].openTime).x - 1;
 
         candles.forEach((obj, i) => {
             this.drawCandle(i, obj);
         });
+    }
+
+    drawHorVolume(data: { price: number, buy: number, sell: number }[]) {
+        let maxVol = 0;
+
+        for (const item of data) {
+            if (item.buy + item.sell > maxVol) {
+                maxVol = item.buy + item.sell;
+            }
+        }
+
+        const resolution = this.horVolumeCanvEl.width / maxVol;
+
+        this.horVolumeCtx.clearRect(0, 0, this.horVolumeCanvEl.width, this.horVolumeCanvEl.height);
+
+        this.horVolumeCtx.fillStyle = 'black';
+
+        for (const item of data) {
+            const vol = item.buy + item.sell;
+
+            const pY = this.coordsInstance.getCoordinates(item.price).y;
+
+            console.log(vol * resolution, pY, item.price);
+
+            this.horVolumeCtx.fillRect(0, pY, vol * resolution, 1);
+        }
     }
 }

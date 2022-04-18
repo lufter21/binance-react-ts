@@ -14,7 +14,7 @@ export class Coordinates {
         minTime?: number;
         maxTime?: number;
     }) {
-        this.canvW = opt.canvH;
+        this.canvW = opt.canvW;
         this.canvH = opt.canvH;
         this.minPrice = opt.minPrice;
         this.maxPrice = opt.maxPrice;

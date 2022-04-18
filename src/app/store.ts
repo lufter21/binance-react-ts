@@ -1,7 +1,7 @@
 import { configureStore, ThunkAction, Action } from '@reduxjs/toolkit';
 import counterReducer from '../features/counter/counterSlice';
 import { botApi } from './botApi';
-import { chartApi } from './chartApi';
+import { binanceApi } from './binanceApi';
 import { tradeApi } from './tradeApi';
 import { volatilityApi } from './volatilityApi';
 
@@ -11,13 +11,13 @@ export const store = configureStore({
     [volatilityApi.reducerPath]: volatilityApi.reducer,
     [botApi.reducerPath]: botApi.reducer,
     [tradeApi.reducerPath]: tradeApi.reducer,
-    [chartApi.reducerPath]: chartApi.reducer,
+    [binanceApi.reducerPath]: binanceApi.reducer,
   },
   middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(
     volatilityApi.middleware,
     botApi.middleware,
     tradeApi.middleware,
-    chartApi.middleware,
+    binanceApi.middleware,
   ),
 });
 

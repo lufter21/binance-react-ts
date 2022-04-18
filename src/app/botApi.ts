@@ -26,45 +26,45 @@ type Tradelines = {
 export const botApi = createApi({
     baseQuery: fetchBaseQuery({ baseUrl: serverApiBaseUrl }),
     reducerPath: 'botApi',
-    tagTypes: ['Bot'],
+    tagTypes: ['Bot', 'Tradelines'],
     endpoints: (build) => ({
         getBotMessages: build.query<any, void>({
             query: () => 'bot',
-            async onCacheEntryAdded(arg, { updateCachedData, cacheDataLoaded, cacheEntryRemoved }) {
-                // create a websocket connection when the cache subscription starts
-                const ws = new WebSocket(serverWsApiUrl + '/bot');
-                try {
-                    // wait for the initial query to resolve before proceeding
-                    await cacheDataLoaded
+            // async onCacheEntryAdded(arg, { updateCachedData, cacheDataLoaded, cacheEntryRemoved }) {
+            //     // create a websocket connection when the cache subscription starts
+            //     const ws = new WebSocket(serverWsApiUrl + '/bot');
+            //     try {
+            //         // wait for the initial query to resolve before proceeding
+            //         await cacheDataLoaded
 
-                    // when data is received from the socket connection to the server,
-                    // if it is a message and for the appropriate channel,
-                    // update our query result with the received message
-                    const listener = (event: MessageEvent) => {
-                        try {
-                            const data = JSON.parse(event.data);
+            //         // when data is received from the socket connection to the server,
+            //         // if it is a message and for the appropriate channel,
+            //         // update our query result with the received message
+            //         const listener = (event: MessageEvent) => {
+            //             try {
+            //                 const data = JSON.parse(event.data);
 
-                            if (data) {
-                                updateCachedData((draft) => {
-                                    Object.assign(draft, data);
-                                });
-                            }
+            //                 if (data) {
+            //                     updateCachedData((draft) => {
+            //                         Object.assign(draft, data);
+            //                     });
+            //                 }
 
-                        } catch (error: any) {
-                            console.error(new Error(error));
-                        }
-                    }
+            //             } catch (error: any) {
+            //                 console.error(new Error(error));
+            //             }
+            //         }
 
-                    ws.addEventListener('message', listener);
-                } catch {
-                    // no-op in case `cacheEntryRemoved` resolves before `cacheDataLoaded`,
-                    // in which case `cacheDataLoaded` will throw
-                }
-                // cacheEntryRemoved will resolve when the cache subscription is no longer active
-                await cacheEntryRemoved
-                // perform cleanup steps once the `cacheEntryRemoved` promise resolves
-                ws.close();
-            },
+            //         ws.addEventListener('message', listener);
+            //     } catch {
+            //         // no-op in case `cacheEntryRemoved` resolves before `cacheDataLoaded`,
+            //         // in which case `cacheDataLoaded` will throw
+            //     }
+            //     // cacheEntryRemoved will resolve when the cache subscription is no longer active
+            //     await cacheEntryRemoved
+            //     // perform cleanup steps once the `cacheEntryRemoved` promise resolves
+            //     ws.close();
+            // },
             providesTags: ['Bot'],
         }),
 
@@ -78,7 +78,8 @@ export const botApi = createApi({
         }),
 
         getTradeLines: build.query<Tradelines, void>({
-            query: () => ({url: 'tradelines'})
+            query: () => ({url: 'tradelines'}),
+            providesTags: ['Tradelines']
         }),
 
         setTradeLines: build.mutation<Tradelines, {
@@ -91,7 +92,8 @@ export const botApi = createApi({
                 url: 'tradelines',
                 method: 'POST',
                 body,
-            })
+            }),
+            invalidatesTags: ['Tradelines']
         }),
     }),
 });

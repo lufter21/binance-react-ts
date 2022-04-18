@@ -1,7 +1,12 @@
+.chartContainer{
+   position: relative;
+   max-width: 96%;
+   padding-right: 55px;
+}
+
 .canvasContainer {
    position: relative;
    height: 700px;
-   max-width: 90%;
 }
 
 .canvasContainer_moving {
@@ -17,7 +22,8 @@
 
 .canvas,
 .shadowCanvas,
-.linesCanvas {
+.linesCanvas,
+.horVolumeCanvas {
    width: 100%;
    position: absolute;
    top: 0;

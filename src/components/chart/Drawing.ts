@@ -23,7 +23,8 @@ export class Drawing {
     kD: (e: any) => void;
     moving: boolean = false;
 
-    constructor({ canvasWrapEl, coordsInstance, canvasWidth, canvasHeight, type, sendFn }: {
+    constructor({id, canvasWrapEl, coordsInstance, canvasWidth, canvasHeight, type, sendFn }: {
+        id: string;
         canvasWrapEl: HTMLDivElement;
         coordsInstance: Coordinates;
         canvasWidth: number;
@@ -32,7 +33,7 @@ export class Drawing {
         sendFn: (opt: any) => any;
     }) {
         this.sendFn = sendFn;
-
+        this.id = id;
         this.type = type;
 
         if (this.type == 'trends') {
@@ -204,7 +205,6 @@ export class Drawing {
         x?: number;
         y?: number;
         highlight?: boolean;
-        doNotSendData?: boolean;
     }) {
         if (this.points.length < this.maxPointsCount) {
             this.points.push({
@@ -300,7 +300,6 @@ export class Drawing {
     sendPointsData(opt?: string) {
         if (opt == 'delete') {
             const sendData = {
-                type: this.type,
                 removeId: this.id
             };
 
@@ -308,35 +307,35 @@ export class Drawing {
 
         } else if (this.type == 'levels') {
             const sendData = {
-                type: this.type,
-                opt: {
+                obj: {
                     id: this.id,
+                    type: this.type,
                     price: []
                 }
             };
 
             for (const point of this.points) {
                 const props = this.coordsInstance.getProps(point.coords.x, point.coords.y);
-                sendData.opt.price.push(props.price);
+                sendData.obj.price.push(props.price);
             }
 
             this.sendFn(sendData);
 
         } else if (this.type == 'trends') {
             const sendData = {
-                type: this.type,
-                opt: {
+                obj: {
                     id: this.id,
+                    type: this.type,
                     lines: []
                 }
             };
 
-            sendData.opt.lines.push({
+            sendData.obj.lines.push({
                 start: this.coordsInstance.getProps(this.points[0].coords.x, this.points[0].coords.y),
                 end: this.coordsInstance.getProps(this.points[1].coords.x, this.points[1].coords.y)
             });
 
-            sendData.opt.lines.push({
+            sendData.obj.lines.push({
                 start: this.coordsInstance.getProps(this.points[2].coords.x, this.points[2].coords.y),
                 end: this.coordsInstance.getProps(this.points[3].coords.x, this.points[3].coords.y)
             });
@@ -346,23 +345,40 @@ export class Drawing {
     }
 
     drawWithData(input: any) {
-        console.log(input);
         if (this.type == 'levels') {
             const inp: {
                 id: string;
                 price: number[];
             } = input;
 
-            this.id = inp.id;
-
             for (const price of inp.price) {
                 const { x, y } = this.coordsInstance.getCoordinates(price);
 
-                this.setPoint({ pointId: this.points.length, x, y, doNotSendData: true });
+                this.setPoint({ pointId: this.points.length, x, y });
             }
 
-        } else {
+        } else if (this.type == 'trends') {
+            const inp: {
+                id: string;
+                lines: {
+                    start: {
+                        price: number;
+                        time: number;
+                    };
+                    end: {
+                        price: number;
+                        time: number;
+                    };
+                }[];
+            } = input;
 
+            for (const line of inp.lines) {
+                const { x: sX, y: sY } = this.coordsInstance.getCoordinates(line.start.price, line.start.time);
+                this.setPoint({ pointId: this.points.length, x: sX, y: sY });
+                
+                const { x: eX, y: eY } = this.coordsInstance.getCoordinates(line.end.price, line.end.time);
+                this.setPoint({ pointId: this.points.length, x: eX, y: eY });
+            }
         }
     }
 

@@ -1,11 +1,10 @@
 import React, { BaseSyntheticEvent, useEffect, useRef, useState } from 'react';
-import { useGetCandlesTicksQuery, useGetSymbolsQuery } from '../../app/chartApi';
+import { useGetCandlesTicksQuery, useGetSymbolsQuery, useGetTradesListQuery } from '../../app/binanceApi';
 import { DrawChart } from './DrawChart';
 import css from './Chart.module.scss';
-import ReactDOM from 'react-dom';
 import { Drawing } from './Drawing';
 import { Coordinates } from './Coordinates';
-import { useGetTradeLinesQuery, useSetTradeLinesMutation } from '../../app/botApi';
+import { useGetBotMessagesQuery, useGetTradeLinesQuery, useSetTradeLinesMutation } from '../../app/botApi';
 
 // move
 let startCursorPos = { X: 0, Y: 0 },
@@ -54,7 +53,7 @@ const moveCanvas = function (contEl, moveXEls, moveYEls) {
 }
 
 export default function Chart() {
-    const canvasDims = useRef<number[]>([2000, 1000]);
+    const canvasDims = useRef<number[]>([3000, 3700]);
     const tradelinesDrawn = useRef<boolean>(false);
     const tradelinesInstances = useRef<{ [id: string]: Drawing }>({});
     const maxPriceRef = useRef<number>(0);
@@ -64,32 +63,42 @@ export default function Chart() {
     const paintingCanvasWrapRef = useRef<HTMLDivElement>();
     const canvInnerRef = useRef<HTMLDivElement>();
     const linesCanvasRef = useRef<HTMLCanvasElement>();
+    const horVolCanvasRef = useRef<HTMLCanvasElement>();
     const priceScaleBarCanvasRef = useRef<HTMLCanvasElement>();
     const priceBarCanvasRef = useRef<HTMLCanvasElement>();
 
     const [symbol, setSymbol] = useState(null);
 
-    // const symbol = 'WAVESUSDT';
+    const symbols = ['WAVESUSDT'];
 
-    const { data: _symbols } = useGetSymbolsQuery();
+    // const { data: _symbols } = useGetSymbolsQuery();
 
-    const symbols = _symbols && [..._symbols];
+    // const symbols = _symbols && [..._symbols];
+
+    const { data: botMsg } = useGetBotMessagesQuery();
+
+    // const symbols = botMsg && [...botMsg.availableSymbols];
+
+    const { data: tradeList } = useGetTradesListQuery({ symbol, limit: 1000 }, { skip: !symbol });
 
     const { data: tradelines } = useGetTradeLinesQuery();
-    const { data } = useGetCandlesTicksQuery({ symbol, limit: 150, interval: '5m' }, { skip: !symbol });
+    const { data } = useGetCandlesTicksQuery({ symbol, limit: 500, interval: '5m' }, { skip: !symbol });
 
-    const [setTradeLineMutat] = useSetTradeLinesMutation();
+    const [setTradeLineMtn] = useSetTradeLinesMutation();
 
     const setTradeLine = function (sendData: any) {
-        sendData.symbol = symbol;
-
+        console.log(sendData);
         if (sendData.removeId) {
-            tradelinesInstances.current[sendData.removeId].remove();
+            if (tradelinesInstances.current[sendData.removeId]) {
+                tradelinesInstances.current[sendData.removeId].remove();
+            }
 
             delete tradelinesInstances.current[sendData.removeId];
+        } else {
+            sendData.obj.symbol = symbol;
         }
 
-        setTradeLineMutat(sendData);
+        setTradeLineMtn(sendData);
     }
 
     useEffect(() => {
@@ -103,6 +112,7 @@ export default function Chart() {
         const chart = new DrawChart({
             canvInEl: canvInnerRef.current,
             linesCanvEl: linesCanvasRef.current,
+            horVolumeCanvEl: horVolCanvasRef.current,
             priceScaleBarCanvEl: priceScaleBarCanvasRef.current,
             priceBarCanvEl: priceBarCanvasRef.current,
             isShadow: false,
@@ -121,14 +131,22 @@ export default function Chart() {
     }, []);
 
     useEffect(() => {
-        if (symbol && tradelines && maxPriceRef.current > 0 && !tradelinesDrawn.current) {
+        if (tradeList && maxPriceRef.current > 0) {
+            tradeList && chartInstRef.current.drawHorVolume(tradeList);
+        }
+    }, [tradeList, maxPriceRef.current]);
+
+    useEffect(() => {
+        if (symbol && tradelines && tradelines[symbol] && maxPriceRef.current > 0 && !tradelinesDrawn.current) {
             tradelinesDrawn.current = true;
 
             const levels = tradelines[symbol].levels;
             const trends = tradelines[symbol].trends;
 
             for (const lvl of levels) {
+
                 const pInst = new Drawing({
+                    id: lvl.id,
                     canvasWrapEl: paintingCanvasWrapRef.current,
                     canvasWidth: canvasDims.current[0],
                     canvasHeight: canvasDims.current[1],
@@ -137,13 +155,15 @@ export default function Chart() {
                     sendFn: setTradeLine
                 });
 
+                tradelinesInstances.current[pInst.id] = pInst;
+
                 pInst.drawWithData(lvl);
 
-                tradelinesInstances.current[pInst.id] = pInst;
             }
 
             for (const trd of trends) {
                 const pInst = new Drawing({
+                    id: trd.id,
                     canvasWrapEl: paintingCanvasWrapRef.current,
                     canvasWidth: canvasDims.current[0],
                     canvasHeight: canvasDims.current[1],
@@ -152,9 +172,10 @@ export default function Chart() {
                     sendFn: setTradeLine
                 });
 
+                tradelinesInstances.current[pInst.id] = pInst;
+
                 pInst.drawWithData(trd);
 
-                tradelinesInstances.current[pInst.id] = pInst;
             }
 
         }
@@ -186,10 +207,14 @@ export default function Chart() {
                     }
                 }
 
-                coordsInstRef.current.maxPrice = maxPrice + ((maxPrice - minPrice) / 2);
-                coordsInstRef.current.minPrice = minPrice - ((maxPrice - minPrice) / 2);
-                coordsInstRef.current.minTime = data[0].openTime;
-                coordsInstRef.current.maxTime = data[data.length - 1].openTime;
+                coordsInstRef.current.maxPrice = maxPrice + ((maxPrice - minPrice) / 4);
+                coordsInstRef.current.minPrice = minPrice - ((maxPrice - minPrice) / 4);
+
+                const minTime = data[0].openTime;
+                const maxTime = data.slice(-1)[0].openTime;
+
+                coordsInstRef.current.minTime = minTime;
+                coordsInstRef.current.maxTime = maxTime + ((maxTime - minTime) / 4);
 
                 chartInstRef.current.minPrice = minPrice;
                 chartInstRef.current.maxPrice = maxPrice;
@@ -204,6 +229,7 @@ export default function Chart() {
 
     const addNewTrendline = function () {
         const pInst = new Drawing({
+            id: symbol + Math.random() + 'trends',
             canvasWrapEl: paintingCanvasWrapRef.current,
             canvasWidth: canvasDims.current[0],
             canvasHeight: canvasDims.current[1],
@@ -212,13 +238,12 @@ export default function Chart() {
             sendFn: setTradeLine
         });
 
-        pInst.id = symbol + Math.random() + 'trends';
-
         tradelinesInstances.current[pInst.id] = pInst;
     }
 
     const addNewLevelLine = function () {
         const pInst = new Drawing({
+            id: symbol + Math.random() + 'levels',
             canvasWrapEl: paintingCanvasWrapRef.current,
             canvasWidth: canvasDims.current[0],
             canvasHeight: canvasDims.current[1],
@@ -227,12 +252,16 @@ export default function Chart() {
             sendFn: setTradeLine
         });
 
-        pInst.id = symbol + Math.random() + 'levels';
-
         tradelinesInstances.current[pInst.id] = pInst;
     }
 
     const selectSymbol = function (e: BaseSyntheticEvent) {
+        for (const trlInst of Object.values(tradelinesInstances.current)) {
+            trlInst.remove();
+        }
+
+        tradelinesInstances.current = {};
+
         tradelinesDrawn.current = false;
         maxPriceRef.current = 0;
 
@@ -254,6 +283,7 @@ export default function Chart() {
                     <div className={css.canvasWrap__inner + ' move-axis-y'}>
                         <div ref={canvInnerRef} className={css.canvasWrap__inner + ' move-axis-x'}></div>
                         <canvas ref={linesCanvasRef} className={css.linesCanvas}></canvas>
+                        <canvas ref={horVolCanvasRef} className={css.horVolumeCanvas}></canvas>
                     </div>
                 </div>
 
