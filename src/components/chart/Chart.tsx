@@ -53,7 +53,7 @@ const moveCanvas = function (contEl, moveXEls, moveYEls) {
 }
 
 export default function Chart() {
-    const canvasDims = useRef<number[]>([3000, 3700]);
+    const canvasDims = useRef<number[]>([5000, 1000]);
     const tradelinesDrawn = useRef<boolean>(false);
     const tradelinesInstances = useRef<{ [id: string]: Drawing }>({});
     const maxPriceRef = useRef<number>(0);
@@ -69,7 +69,7 @@ export default function Chart() {
 
     const [symbol, setSymbol] = useState(null);
 
-    const symbols = ['WAVESUSDT'];
+    // const symbols = ['WAVESUSDT'];
 
     // const { data: _symbols } = useGetSymbolsQuery();
 
@@ -77,9 +77,9 @@ export default function Chart() {
 
     const { data: botMsg } = useGetBotMessagesQuery();
 
-    // const symbols = botMsg && [...botMsg.availableSymbols];
+    const symbols = botMsg && [...botMsg.availableSymbols];
 
-    const { data: tradeList } = useGetTradesListQuery({ symbol, limit: 1000 }, { skip: !symbol });
+    // const { data: tradeList } = useGetTradesListQuery({ symbol, limit: 1000 }, { skip: !symbol });
 
     const { data: tradelines } = useGetTradeLinesQuery();
     const { data } = useGetCandlesTicksQuery({ symbol, limit: 500, interval: '5m' }, { skip: !symbol });
@@ -130,11 +130,11 @@ export default function Chart() {
         );
     }, []);
 
-    useEffect(() => {
-        if (tradeList && maxPriceRef.current > 0) {
-            tradeList && chartInstRef.current.drawHorVolume(tradeList);
-        }
-    }, [tradeList, maxPriceRef.current]);
+    // useEffect(() => {
+    //     if (tradeList && maxPriceRef.current > 0) {
+    //         tradeList && chartInstRef.current.drawHorVolume(tradeList);
+    //     }
+    // }, [tradeList, maxPriceRef.current]);
 
     useEffect(() => {
         if (symbol && tradelines && tradelines[symbol] && maxPriceRef.current > 0 && !tradelinesDrawn.current) {
