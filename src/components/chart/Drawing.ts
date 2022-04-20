@@ -1,5 +1,4 @@
 import { Coordinates } from './Coordinates';
-import { DrawChart } from './DrawChart';
 
 export class Drawing {
     id: string;
@@ -23,7 +22,7 @@ export class Drawing {
     kD: (e: any) => void;
     moving: boolean = false;
 
-    constructor({id, canvasWrapEl, coordsInstance, canvasWidth, canvasHeight, type, sendFn }: {
+    constructor({ id, canvasWrapEl, coordsInstance, canvasWidth, canvasHeight, type, sendFn }: {
         id: string;
         canvasWrapEl: HTMLDivElement;
         coordsInstance: Coordinates;
@@ -93,7 +92,7 @@ export class Drawing {
                     for (const point of this.points) {
                         const { x: pX, y: pY } = point.coords;
 
-                        if (pX - 7 < x && x < pX + 7 && pY - 7 < y && y < pY + 7) {
+                        if (pX - 3 < x && x < pX + 3 && pY - 3 < y && y < pY + 3) {
                             this.setPoint({ pointId: point.pointId, highlight: !point.highlight });
                             this.moving = true;
                         }
@@ -110,7 +109,7 @@ export class Drawing {
                     for (const point of this.points) {
                         const { x: pX, y: pY } = point.coords;
 
-                        if (pY - 7 < y && y < pY + 7) {
+                        if (pY - 3 < y && y < pY + 3) {
                             this.setPoint({ pointId: point.pointId, highlight: !point.highlight });
                             this.moving = true;
                         }
@@ -257,6 +256,17 @@ export class Drawing {
                 this.ctx.lineTo(this.points[3].coords.x, this.points[3].coords.y);
                 this.ctx.stroke();
 
+                this.ctx.fillStyle = '#000000';
+                this.ctx.font = '21px sans-serif';
+
+                if (this.points[0].coords.y > this.points[2].coords.y) {
+                    this.ctx.fillText('↓', this.points[0].coords.x, this.points[0].coords.y - 7);
+                    this.ctx.fillText('↓', this.points[1].coords.x, this.points[1].coords.y - 7);
+                } else {
+                    this.ctx.fillText('↑', this.points[0].coords.x, this.points[0].coords.y + 21);
+                    this.ctx.fillText('↑', this.points[1].coords.x, this.points[1].coords.y + 21);
+                }
+
             } else if (this.type == 'levels') {
                 this.ctx.fillStyle = 'rgba(255,180,242,.35)';
                 this.ctx.beginPath();
@@ -274,6 +284,17 @@ export class Drawing {
                     this.ctx.moveTo(0, point.coords.y + .5);
                     this.ctx.lineTo(this.canvEl.width, point.coords.y + .5);
                     this.ctx.stroke();
+                }
+
+                this.ctx.fillStyle = '#000000';
+                this.ctx.font = '21px sans-serif';
+
+                for (let i = 0; i < 20; i++) {
+                    if (this.points[0].coords.y > this.points[1].coords.y) {
+                        this.ctx.fillText('↓', (this.canvEl.width / 20) * i, this.points[0].coords.y - 7);
+                    } else {
+                        this.ctx.fillText('↑', (this.canvEl.width / 20) * i, this.points[0].coords.y + 21);
+                    }
                 }
 
             }
@@ -375,7 +396,7 @@ export class Drawing {
             for (const line of inp.lines) {
                 const { x: sX, y: sY } = this.coordsInstance.getCoordinates(line.start.price, line.start.time);
                 this.setPoint({ pointId: this.points.length, x: sX, y: sY });
-                
+
                 const { x: eX, y: eY } = this.coordsInstance.getCoordinates(line.end.price, line.end.time);
                 this.setPoint({ pointId: this.points.length, x: eX, y: eY });
             }

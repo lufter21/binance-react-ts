@@ -53,7 +53,7 @@ const moveCanvas = function (contEl, moveXEls, moveYEls) {
 }
 
 export default function Chart() {
-    const canvasDims = useRef<number[]>([5000, 1000]);
+    const canvasDims = useRef<number[]>([5000, 2000]);
     const tradelinesDrawn = useRef<boolean>(false);
     const tradelinesInstances = useRef<{ [id: string]: Drawing }>({});
     const maxPriceRef = useRef<number>(0);
