@@ -52,8 +52,10 @@ const moveCanvas = function (contEl, moveXEls, moveYEls) {
     contEl.addEventListener('mouseup', stop);
 }
 
+const initDimesions = [4333, 1333];
+
 export default function Chart() {
-    const canvasDims = useRef<number[]>([5000, 2000]);
+    const canvasDims = useRef<number[]>(initDimesions);
     const tradelinesDrawn = useRef<boolean>(false);
     const tradelinesInstances = useRef<{ [id: string]: Drawing }>({});
     const maxPriceRef = useRef<number>(0);
@@ -68,6 +70,7 @@ export default function Chart() {
     const priceBarCanvasRef = useRef<HTMLCanvasElement>();
 
     const [symbol, setSymbol] = useState(null);
+    const [scale, setScale] = useState(0);
 
     // const symbols = ['WAVESUSDT'];
 
@@ -129,6 +132,27 @@ export default function Chart() {
             containerRef.current.querySelectorAll('.move-axis-y')
         );
     }, []);
+
+    useEffect(() => {
+        canvasDims.current = [
+            initDimesions[0] + scale,
+            initDimesions[1] + scale,
+        ];
+
+        coordsInstRef.current.canvW = canvasDims.current[0];
+        coordsInstRef.current.canvH = canvasDims.current[1];
+
+        chartInstRef.current.canvasWidth = canvasDims.current[0];
+        chartInstRef.current.canvasHeight = canvasDims.current[1];
+        chartInstRef.current.reInit();
+
+        for (const trlInst of Object.values(tradelinesInstances.current)) {
+            trlInst.canvasWidth = canvasDims.current[0];
+            trlInst.canvasHeight = canvasDims.current[1];
+            trlInst.reInit();
+        }
+
+    }, [scale]);
 
     // useEffect(() => {
     //     if (tradeList && maxPriceRef.current > 0) {
@@ -310,6 +334,12 @@ export default function Chart() {
                 <option></option>
                 {selOpt}
             </select>
+
+            {/* <div className={css.scaleButtons}>
+                <button onClick={() => setScale(scale - 100)}>-</button>
+                <button onClick={() => setScale(scale + 100)}>+</button>
+                <button onClick={() => setScale(0)}>reset</button>
+            </div> */}
         </div>
     );
 }

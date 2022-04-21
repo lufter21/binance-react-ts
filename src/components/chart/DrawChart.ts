@@ -20,6 +20,8 @@ export class DrawChart {
     priceScaleBarCtx: CanvasRenderingContext2D;
     coordsInstance: Coordinates;
     horVolumeCtx: CanvasRenderingContext2D;
+    canvasWidth: number;
+    canvasHeight: number;
 
     constructor({ canvInEl, linesCanvEl, horVolumeCanvEl, priceScaleBarCanvEl, priceBarCanvEl, isShadow, canvasWidth, canvasHeight, coordsInstance }: {
         canvInEl: HTMLDivElement;
@@ -32,6 +34,8 @@ export class DrawChart {
         canvasHeight: number;
         coordsInstance: Coordinates;
     }) {
+        this.canvasWidth = canvasWidth;
+        this.canvasHeight = canvasHeight;
         this.isShadow = isShadow;
         this.minPrice = 0;
         this.maxPrice = 0;
@@ -76,6 +80,25 @@ export class DrawChart {
         this.priceScaleBarCtx = priceScaleBarCanvEl.getContext('2d');
 
         this.coordsInstance = coordsInstance;
+    }
+
+    reInit() {
+        this.canvEl.width = this.canvasWidth;
+        this.canvEl.height = this.canvasHeight;
+        this.canvEl.style.width = this.canvasWidth + 'px';
+        this.canvEl.style.height = this.canvasHeight + 'px';
+
+        this.linesCanvEl.width = this.linesCanvEl.offsetWidth;
+        this.linesCanvEl.height = this.canvasHeight;
+        this.linesCanvEl.style.height = this.canvasHeight + 'px';
+
+        this.horVolumeCanvEl.width = this.horVolumeCanvEl.offsetWidth;
+        this.horVolumeCanvEl.height = this.canvasHeight;
+        this.horVolumeCanvEl.style.height = this.canvasHeight + 'px';
+
+        this.priceBarCanvEl.width = this.priceBarCanvEl.offsetWidth;
+        this.priceBarCanvEl.height = this.canvasHeight;
+        this.priceBarCanvEl.style.height = this.canvasHeight + 'px';
     }
 
     drawPriceScale() {

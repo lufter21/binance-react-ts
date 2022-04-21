@@ -21,6 +21,8 @@ export class Drawing {
     mM: (e: any) => void;
     kD: (e: any) => void;
     moving: boolean = false;
+    canvasWidth: number;
+    canvasHeight: number;
 
     constructor({ id, canvasWrapEl, coordsInstance, canvasWidth, canvasHeight, type, sendFn }: {
         id: string;
@@ -31,6 +33,8 @@ export class Drawing {
         type: 'trends' | 'levels';
         sendFn: (opt: any) => any;
     }) {
+        this.canvasWidth = canvasWidth;
+        this.canvasHeight = canvasHeight;
         this.sendFn = sendFn;
         this.id = id;
         this.type = type;
@@ -57,6 +61,14 @@ export class Drawing {
         this.ctx = this.canvEl.getContext('2d');
 
         this.mouseEvents();
+    }
+
+    reInit(){
+        this.canvasWrapEl.style.width = this.canvasWidth + 'px';
+        this.canvasWrapEl.style.height = this.canvasHeight + 'px';
+
+        this.canvEl.width = this.canvasWidth;
+        this.canvEl.height = this.canvasHeight;
     }
 
     mouseEvents() {
@@ -256,7 +268,7 @@ export class Drawing {
                 this.ctx.lineTo(this.points[3].coords.x, this.points[3].coords.y);
                 this.ctx.stroke();
 
-                this.ctx.fillStyle = '#000000';
+                this.ctx.fillStyle = 'rgba(0,0,0,.5)';
                 this.ctx.font = '21px sans-serif';
 
                 if (this.points[0].coords.y > this.points[2].coords.y) {
@@ -286,14 +298,14 @@ export class Drawing {
                     this.ctx.stroke();
                 }
 
-                this.ctx.fillStyle = '#000000';
+                this.ctx.fillStyle = 'rgba(0,0,0,.5)';
                 this.ctx.font = '21px sans-serif';
 
-                for (let i = 0; i < 20; i++) {
+                for (let i = 0; i < 7; i++) {
                     if (this.points[0].coords.y > this.points[1].coords.y) {
-                        this.ctx.fillText('↓', (this.canvEl.width / 20) * i, this.points[0].coords.y - 7);
+                        this.ctx.fillText('↓', (this.canvEl.width / 7) * i, this.points[0].coords.y - 7);
                     } else {
-                        this.ctx.fillText('↑', (this.canvEl.width / 20) * i, this.points[0].coords.y + 21);
+                        this.ctx.fillText('↑', (this.canvEl.width / 7) * i, this.points[0].coords.y + 21);
                     }
                 }
 
