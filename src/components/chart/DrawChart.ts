@@ -14,19 +14,22 @@ export class DrawChart {
     priceBarCanvEl: HTMLCanvasElement;
     linesCanvEl: HTMLCanvasElement;
     horVolumeCanvEl: HTMLCanvasElement;
+    depthCanvEl: HTMLCanvasElement;
     ctx: CanvasRenderingContext2D;
     linesCtx: CanvasRenderingContext2D;
     priceBarCtx: CanvasRenderingContext2D;
     priceScaleBarCtx: CanvasRenderingContext2D;
     coordsInstance: Coordinates;
     horVolumeCtx: CanvasRenderingContext2D;
+    depthCtx: CanvasRenderingContext2D;
     canvasWidth: number;
     canvasHeight: number;
 
-    constructor({ canvInEl, linesCanvEl, horVolumeCanvEl, priceScaleBarCanvEl, priceBarCanvEl, isShadow, canvasWidth, canvasHeight, coordsInstance }: {
+    constructor({ canvInEl, linesCanvEl, horVolumeCanvEl, depthCanvEl, priceScaleBarCanvEl, priceBarCanvEl, isShadow, canvasWidth, canvasHeight, coordsInstance }: {
         canvInEl: HTMLDivElement;
         linesCanvEl: HTMLCanvasElement;
         horVolumeCanvEl: HTMLCanvasElement;
+        depthCanvEl: HTMLCanvasElement;
         priceScaleBarCanvEl: HTMLCanvasElement;
         priceBarCanvEl: HTMLCanvasElement;
         isShadow: boolean;
@@ -48,6 +51,7 @@ export class DrawChart {
         this.priceBarCanvEl = priceBarCanvEl;
         this.linesCanvEl = linesCanvEl;
         this.horVolumeCanvEl = horVolumeCanvEl;
+        this.depthCanvEl = depthCanvEl;
 
         this.canvEl.classList.add((isShadow) ? css.shadowCanvas : css.canvas);
 
@@ -66,6 +70,10 @@ export class DrawChart {
         this.horVolumeCanvEl.height = canvasHeight;
         this.horVolumeCanvEl.style.height = canvasHeight + 'px';
 
+        this.depthCanvEl.width = this.depthCanvEl.offsetWidth;
+        this.depthCanvEl.height = canvasHeight;
+        this.depthCanvEl.style.height = canvasHeight + 'px';
+
         this.priceBarCanvEl.width = priceBarCanvEl.offsetWidth;
         this.priceBarCanvEl.height = canvasHeight;
         this.priceBarCanvEl.style.height = canvasHeight + 'px';
@@ -76,6 +84,7 @@ export class DrawChart {
         this.ctx = this.canvEl.getContext('2d');
         this.linesCtx = linesCanvEl.getContext('2d');
         this.horVolumeCtx = this.horVolumeCanvEl.getContext('2d');
+        this.depthCtx = this.depthCanvEl.getContext('2d');
         this.priceBarCtx = priceBarCanvEl.getContext('2d');
         this.priceScaleBarCtx = priceScaleBarCanvEl.getContext('2d');
 
@@ -257,20 +266,132 @@ export class DrawChart {
             }
         }
 
-        const resolution = this.horVolumeCanvEl.width / maxVol;
+        const resolution = 200 / maxVol;
 
         this.horVolumeCtx.clearRect(0, 0, this.horVolumeCanvEl.width, this.horVolumeCanvEl.height);
 
-        this.horVolumeCtx.fillStyle = 'black';
-
         for (const item of data) {
-            const vol = item.buy + item.sell;
-
             const pY = this.coordsInstance.getCoordinates(item.price).y;
 
-            console.log(vol * resolution, pY, item.price);
-
-            this.horVolumeCtx.fillRect(0, pY, vol * resolution, 1);
+            this.horVolumeCtx.fillStyle = 'red';
+            this.horVolumeCtx.fillRect(this.horVolumeCanvEl.width, pY, item.sell * resolution * -1, 1);
+            
+            this.horVolumeCtx.fillStyle = 'green';
+            this.horVolumeCtx.fillRect(this.horVolumeCanvEl.width - item.sell * resolution, pY, item.buy * resolution * -1, 1);
         }
     }
+
+    drawDepth(data: { bids: string[][]; asks: string[][]; lastUpdateId?: number; }) {
+        const asksEstimatePrice = +data.asks[0][0] + (2 * (+data.asks[0][0] / 100));
+        const bidsEstimatePrice = +data.bids[0][0] - (2 * (+data.bids[0][0] / 100));
+
+        let asksSum = 0,
+            bidsSum = 0;
+
+        const asksArr: string[][] = [],
+            bidsArr: string[][] = [];
+
+        for (const ask of data.asks) {
+            asksSum += +ask[1];
+
+            asksArr.push(ask);
+
+            if (+ask[0] >= asksEstimatePrice) {
+                break;
+            }
+        }
+
+        for (const bid of data.bids) {
+            bidsSum += +bid[1];
+
+            bidsArr.push(bid);
+
+            if (+bid[0] <= bidsEstimatePrice) {
+                break;
+            }
+        }
+
+        asksArr.sort((a, b) => +b[1] - +a[1]);
+        bidsArr.sort((a, b) => +b[1] - +a[1]);
+
+        const maxAsk = asksArr[0];
+        const lastMaxAsks = asksArr.slice(1, 2);
+
+        const maxBid = bidsArr[0];
+        const lastMaxBids = bidsArr.slice(1, 2);
+
+        const maxAskY = this.coordsInstance.getCoordinates(+maxAsk[0]).y;
+        const maxBidY = this.coordsInstance.getCoordinates(+maxBid[0]).y;
+        const estAskY = this.coordsInstance.getCoordinates(asksEstimatePrice).y;
+        const estBidY = this.coordsInstance.getCoordinates(bidsEstimatePrice).y;
+
+        this.depthCtx.clearRect(0, 0, this.depthCanvEl.width, this.depthCanvEl.height);
+
+        this.depthCtx.lineWidth = 1;
+        this.depthCtx.strokeStyle = 'blue';
+        this.depthCtx.fillStyle = 'blue';
+
+        for (const ask of lastMaxAsks) {
+            const Y = this.coordsInstance.getCoordinates(+ask[0]).y;
+
+            this.depthCtx.beginPath();
+            this.depthCtx.moveTo(0, Math.ceil(Y) + .5);
+            this.depthCtx.lineTo(this.depthCanvEl.width, Math.ceil(Y) + .5);
+            this.depthCtx.stroke();
+
+            this.depthCtx.fillText((+ask[1]).toFixed(5), this.depthCanvEl.width - 10, Y - 7);
+        }
+
+        for (const bid of lastMaxBids) {
+            const Y = this.coordsInstance.getCoordinates(+bid[0]).y;
+
+            this.depthCtx.beginPath();
+            this.depthCtx.moveTo(0, Math.ceil(Y) + .5);
+            this.depthCtx.lineTo(this.depthCanvEl.width, Math.ceil(Y) + .5);
+            this.depthCtx.stroke();
+
+            this.depthCtx.fillText((+bid[1]).toFixed(5), this.depthCanvEl.width - 10, Y + 18);
+        }
+
+        this.depthCtx.strokeStyle = 'black';
+
+        this.depthCtx.beginPath();
+        this.depthCtx.moveTo(0, Math.ceil(maxAskY) + .5);
+        this.depthCtx.lineTo(this.depthCanvEl.width, Math.ceil(maxAskY) + .5);
+        this.depthCtx.stroke();
+
+        this.depthCtx.beginPath();
+        this.depthCtx.moveTo(0, Math.ceil(maxBidY) + .5);
+        this.depthCtx.lineTo(this.depthCanvEl.width, Math.ceil(maxBidY) + .5);
+        this.depthCtx.stroke();
+
+        this.depthCtx.strokeStyle = 'lightgray';
+
+        this.depthCtx.beginPath();
+        this.depthCtx.moveTo(0, Math.ceil(estAskY) + .5);
+        this.depthCtx.lineTo(this.depthCanvEl.width, Math.ceil(estAskY) + .5);
+        this.depthCtx.stroke();
+
+        this.depthCtx.beginPath();
+        this.depthCtx.moveTo(0, Math.ceil(estBidY) + .5);
+        this.depthCtx.lineTo(this.depthCanvEl.width, Math.ceil(estBidY) + .5);
+        this.depthCtx.stroke();
+
+
+        this.depthCtx.font = '12px sans-serif';
+        this.depthCtx.textAlign = 'right';
+
+        this.depthCtx.fillStyle = +maxAsk[1] > +maxBid[1] ? 'black' : 'lightgray';
+        this.depthCtx.fillText((+maxAsk[1]).toFixed(5), this.depthCanvEl.width - 10, maxAskY - 7);
+
+        this.depthCtx.fillStyle = +maxAsk[1] < +maxBid[1] ? 'black' : 'lightgray';
+        this.depthCtx.fillText((+maxBid[1]).toFixed(5), this.depthCanvEl.width - 10, maxBidY + 18);
+
+        this.depthCtx.fillStyle = asksSum > bidsSum ? 'black' : 'lightgray';
+        this.depthCtx.fillText('Asks Sum ' + asksSum.toFixed(5), this.depthCanvEl.width - 10, estAskY - 7);
+
+        this.depthCtx.fillStyle = asksSum < bidsSum ? 'black' : 'lightgray';
+        this.depthCtx.fillText('Bids Sum ' + bidsSum.toFixed(5), this.depthCanvEl.width - 10, estBidY + 18);
+    }
+
 }

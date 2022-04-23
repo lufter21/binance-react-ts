@@ -23,7 +23,8 @@
 .canvas,
 .shadowCanvas,
 .linesCanvas,
-.horVolumeCanvas {
+.horVolumeCanvas,
+.depthCanvas {
    width: 100%;
    position: absolute;
    top: 0;

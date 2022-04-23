@@ -1,5 +1,5 @@
 import React, { BaseSyntheticEvent, useEffect, useRef, useState } from 'react';
-import { useGetCandlesTicksQuery, useGetSymbolsQuery, useGetTradesListQuery } from '../../app/binanceApi';
+import { useGetCandlesTicksQuery, useGetDepthQuery, useGetSymbolsQuery, useGetTradesListQuery } from '../../app/binanceApi';
 import { DrawChart } from './DrawChart';
 import css from './Chart.module.scss';
 import { Drawing } from './Drawing';
@@ -66,13 +66,14 @@ export default function Chart() {
     const canvInnerRef = useRef<HTMLDivElement>();
     const linesCanvasRef = useRef<HTMLCanvasElement>();
     const horVolCanvasRef = useRef<HTMLCanvasElement>();
+    const depthCanvasRef = useRef<HTMLCanvasElement>();
     const priceScaleBarCanvasRef = useRef<HTMLCanvasElement>();
     const priceBarCanvasRef = useRef<HTMLCanvasElement>();
 
     const [symbol, setSymbol] = useState(null);
     const [scale, setScale] = useState(0);
 
-    // const symbols = ['WAVESUSDT'];
+    const symbols = ['WAVESUSDT', 'MATICUSDT'];
 
     // const { data: _symbols } = useGetSymbolsQuery();
 
@@ -80,9 +81,10 @@ export default function Chart() {
 
     const { data: botMsg } = useGetBotMessagesQuery();
 
-    const symbols = botMsg && [...botMsg.availableSymbols];
+    // const symbols = botMsg && [...botMsg.availableSymbols];
 
-    // const { data: tradeList } = useGetTradesListQuery({ symbol, limit: 1000 }, { skip: !symbol });
+    const { data: tradeList } = useGetTradesListQuery({ symbol, limit: 1000 }, { skip: !symbol });
+    const { data: depth } = useGetDepthQuery({ symbol, limit: 100 }, { skip: !symbol });
 
     const { data: tradelines } = useGetTradeLinesQuery();
     const { data } = useGetCandlesTicksQuery({ symbol, limit: 500, interval: '5m' }, { skip: !symbol });
@@ -116,6 +118,7 @@ export default function Chart() {
             canvInEl: canvInnerRef.current,
             linesCanvEl: linesCanvasRef.current,
             horVolumeCanvEl: horVolCanvasRef.current,
+            depthCanvEl: depthCanvasRef.current,
             priceScaleBarCanvEl: priceScaleBarCanvasRef.current,
             priceBarCanvEl: priceBarCanvasRef.current,
             isShadow: false,
@@ -154,11 +157,11 @@ export default function Chart() {
 
     }, [scale]);
 
-    // useEffect(() => {
-    //     if (tradeList && maxPriceRef.current > 0) {
-    //         tradeList && chartInstRef.current.drawHorVolume(tradeList);
-    //     }
-    // }, [tradeList, maxPriceRef.current]);
+    useEffect(() => {
+        if (tradeList && maxPriceRef.current > 0) {
+            chartInstRef.current.drawHorVolume(tradeList);
+        }
+    }, [tradeList, maxPriceRef.current]);
 
     useEffect(() => {
         if (symbol && tradelines && tradelines[symbol] && maxPriceRef.current > 0 && !tradelinesDrawn.current) {
@@ -251,6 +254,12 @@ export default function Chart() {
         }
     }, [data]);
 
+    useEffect(() => {
+        if (depth && maxPriceRef.current > 0) {
+            chartInstRef.current.drawDepth(depth);
+        }
+    }, [depth, maxPriceRef.current]);
+
     const addNewTrendline = function () {
         const pInst = new Drawing({
             id: symbol + Math.random() + 'trends',
@@ -308,6 +317,7 @@ export default function Chart() {
                         <div ref={canvInnerRef} className={css.canvasWrap__inner + ' move-axis-x'}></div>
                         <canvas ref={linesCanvasRef} className={css.linesCanvas}></canvas>
                         <canvas ref={horVolCanvasRef} className={css.horVolumeCanvas}></canvas>
+                        <canvas ref={depthCanvasRef} className={css.depthCanvas}></canvas>
                     </div>
                 </div>
 
