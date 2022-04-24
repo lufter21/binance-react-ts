@@ -256,7 +256,7 @@ export default function Chart() {
 
     useEffect(() => {
         if (depth && maxPriceRef.current > 0) {
-            chartInstRef.current.drawDepth(depth);
+            chartInstRef.current.drawDepth(depth, symbol);
         }
     }, [depth, maxPriceRef.current]);
 

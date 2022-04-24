@@ -24,6 +24,22 @@ export class DrawChart {
     depthCtx: CanvasRenderingContext2D;
     canvasWidth: number;
     canvasHeight: number;
+    cache: {
+        [symbol: string]: {
+            levelsByDepth: {
+                asks: {
+                    price: number;
+                    volume: number;
+                    ticks: number;
+                }[];
+                bids: {
+                    price: number;
+                    volume: number;
+                    ticks: number;
+                }[];
+            };
+        };
+    } = {};
 
     constructor({ canvInEl, linesCanvEl, horVolumeCanvEl, depthCanvEl, priceScaleBarCanvEl, priceBarCanvEl, isShadow, canvasWidth, canvasHeight, coordsInstance }: {
         canvInEl: HTMLDivElement;
@@ -275,13 +291,22 @@ export class DrawChart {
 
             this.horVolumeCtx.fillStyle = 'red';
             this.horVolumeCtx.fillRect(this.horVolumeCanvEl.width, pY, item.sell * resolution * -1, 1);
-            
+
             this.horVolumeCtx.fillStyle = 'green';
             this.horVolumeCtx.fillRect(this.horVolumeCanvEl.width - item.sell * resolution, pY, item.buy * resolution * -1, 1);
         }
     }
 
-    drawDepth(data: { bids: string[][]; asks: string[][]; lastUpdateId?: number; }) {
+    drawDepth(data: { bids: string[][]; asks: string[][]; lastUpdateId?: number; }, symbol: string) {
+        if (!this.cache[symbol]) {
+            this.cache[symbol] = {
+                levelsByDepth: {
+                    asks: [],
+                    bids: []
+                }
+            };
+        }
+
         const asksEstimatePrice = +data.asks[0][0] + (2 * (+data.asks[0][0] / 100));
         const bidsEstimatePrice = +data.bids[0][0] - (2 * (+data.bids[0][0] / 100));
 
@@ -315,52 +340,73 @@ export class DrawChart {
         bidsArr.sort((a, b) => +b[1] - +a[1]);
 
         const maxAsk = asksArr[0];
-        const lastMaxAsks = asksArr.slice(1, 2);
-
         const maxBid = bidsArr[0];
-        const lastMaxBids = bidsArr.slice(1, 2);
+
+        if (
+            !this.cache[symbol].levelsByDepth.asks.length
+            || this.cache[symbol].levelsByDepth.asks.slice(-1)[0].price !== +maxAsk[0]
+        ) {
+            this.cache[symbol].levelsByDepth.asks.push({
+                price: +maxAsk[0],
+                volume: +maxAsk[1],
+                ticks: 1
+            });
+        }
+
+        if (
+            !this.cache[symbol].levelsByDepth.bids.length
+            || this.cache[symbol].levelsByDepth.bids.slice(-1)[0].price !== +maxBid[0]
+        ) {
+            this.cache[symbol].levelsByDepth.bids.push({
+                price: +maxBid[0],
+                volume: +maxBid[1],
+                ticks: 1
+            });
+        }
 
         const maxAskY = this.coordsInstance.getCoordinates(+maxAsk[0]).y;
         const maxBidY = this.coordsInstance.getCoordinates(+maxBid[0]).y;
+
         const estAskY = this.coordsInstance.getCoordinates(asksEstimatePrice).y;
         const estBidY = this.coordsInstance.getCoordinates(bidsEstimatePrice).y;
 
         this.depthCtx.clearRect(0, 0, this.depthCanvEl.width, this.depthCanvEl.height);
 
         this.depthCtx.lineWidth = 1;
-        this.depthCtx.strokeStyle = 'blue';
-        this.depthCtx.fillStyle = 'blue';
+        this.depthCtx.strokeStyle = 'red';
 
-        for (const ask of lastMaxAsks) {
-            const Y = this.coordsInstance.getCoordinates(+ask[0]).y;
+        for (const ask of this.cache[symbol].levelsByDepth.asks.slice(-3, -1)) {
+            const Y = this.coordsInstance.getCoordinates(ask.price).y;
 
             this.depthCtx.beginPath();
+            this.depthCtx.setLineDash([0]);
             this.depthCtx.moveTo(0, Math.ceil(Y) + .5);
             this.depthCtx.lineTo(this.depthCanvEl.width, Math.ceil(Y) + .5);
             this.depthCtx.stroke();
-
-            this.depthCtx.fillText((+ask[1]).toFixed(5), this.depthCanvEl.width - 10, Y - 7);
         }
 
-        for (const bid of lastMaxBids) {
-            const Y = this.coordsInstance.getCoordinates(+bid[0]).y;
+        this.depthCtx.strokeStyle = 'green';
+
+        for (const bid of this.cache[symbol].levelsByDepth.bids.slice(-3, -1)) {
+            const Y = this.coordsInstance.getCoordinates(bid.price).y;
 
             this.depthCtx.beginPath();
+            this.depthCtx.setLineDash([0]);
             this.depthCtx.moveTo(0, Math.ceil(Y) + .5);
             this.depthCtx.lineTo(this.depthCanvEl.width, Math.ceil(Y) + .5);
             this.depthCtx.stroke();
-
-            this.depthCtx.fillText((+bid[1]).toFixed(5), this.depthCanvEl.width - 10, Y + 18);
         }
 
         this.depthCtx.strokeStyle = 'black';
 
         this.depthCtx.beginPath();
+        this.depthCtx.setLineDash([5, 5]);
         this.depthCtx.moveTo(0, Math.ceil(maxAskY) + .5);
         this.depthCtx.lineTo(this.depthCanvEl.width, Math.ceil(maxAskY) + .5);
         this.depthCtx.stroke();
 
         this.depthCtx.beginPath();
+        this.depthCtx.setLineDash([5, 5]);
         this.depthCtx.moveTo(0, Math.ceil(maxBidY) + .5);
         this.depthCtx.lineTo(this.depthCanvEl.width, Math.ceil(maxBidY) + .5);
         this.depthCtx.stroke();
@@ -368,11 +414,13 @@ export class DrawChart {
         this.depthCtx.strokeStyle = 'lightgray';
 
         this.depthCtx.beginPath();
+        this.depthCtx.setLineDash([0]);
         this.depthCtx.moveTo(0, Math.ceil(estAskY) + .5);
         this.depthCtx.lineTo(this.depthCanvEl.width, Math.ceil(estAskY) + .5);
         this.depthCtx.stroke();
 
         this.depthCtx.beginPath();
+        this.depthCtx.setLineDash([0]);
         this.depthCtx.moveTo(0, Math.ceil(estBidY) + .5);
         this.depthCtx.lineTo(this.depthCanvEl.width, Math.ceil(estBidY) + .5);
         this.depthCtx.stroke();
