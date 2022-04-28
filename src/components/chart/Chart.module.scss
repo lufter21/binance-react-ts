@@ -1,4 +1,4 @@
-.chartContainer{
+.chartContainer {
    position: relative;
    max-width: 96%;
    padding-right: 55px;
@@ -86,6 +86,7 @@
 .paintingLayer {
    z-index: 3;
    overflow: hidden;
+
    &,
    &__inner {
       position: absolute;
@@ -94,7 +95,8 @@
       width: 100%;
       height: 100%;
    }
-   &__controls{
+
+   &__controls {
       position: absolute;
       top: 0;
       right: 0;
@@ -108,7 +110,8 @@
    position: absolute;
    top: 0;
    right: 0;
-   canvas{
+
+   canvas {
       position: absolute;
       left: 0;
       top: 0;
@@ -117,16 +120,28 @@
    }
 }
 
-.select{
+.select {
    position: absolute;
    left: 0;
    top: 0;
    z-index: 4;
 }
 
-.scaleButtons{
+.scaleButtons {
    position: absolute;
    left: 0;
    bottom: 0;
    z-index: 4;
+}
+
+.intervalButtons {
+   position: absolute;
+   left: 150px;
+   top: 0;
+   z-index: 4;
+}
+
+.btnActive {
+   background: #2f4f4f;
+   color: #faebd7;
 }

@@ -307,8 +307,8 @@ export class DrawChart {
             };
         }
 
-        const asksEstimatePrice = +data.asks[0][0] + (2 * (+data.asks[0][0] / 100));
-        const bidsEstimatePrice = +data.bids[0][0] - (2 * (+data.bids[0][0] / 100));
+        const asksEstimatePrice = +data.asks[0][0] + (5 * (+data.asks[0][0] / 100));
+        const bidsEstimatePrice = +data.bids[0][0] - (5 * (+data.bids[0][0] / 100));
 
         let asksSum = 0,
             bidsSum = 0;

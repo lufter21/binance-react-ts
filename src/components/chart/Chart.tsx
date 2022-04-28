@@ -5,6 +5,7 @@ import css from './Chart.module.scss';
 import { Drawing } from './Drawing';
 import { Coordinates } from './Coordinates';
 import { useGetBotMessagesQuery, useGetTradeLinesQuery, useSetTradeLinesMutation } from '../../app/botApi';
+import { useAlert } from 'react-alert';
 
 // move
 let startCursorPos = { X: 0, Y: 0 },
@@ -54,7 +55,8 @@ const moveCanvas = function (contEl, moveXEls, moveYEls) {
 
 const initDimesions = [4333, 1333];
 
-export default function Chart() {
+export default function Chart(props?: { symbols?: string[] }) {
+
     const canvasDims = useRef<number[]>(initDimesions);
     const tradelinesDrawn = useRef<boolean>(false);
     const tradelinesInstances = useRef<{ [id: string]: Drawing }>({});
@@ -70,16 +72,19 @@ export default function Chart() {
     const priceScaleBarCanvasRef = useRef<HTMLCanvasElement>();
     const priceBarCanvasRef = useRef<HTMLCanvasElement>();
 
+    const alert = useAlert();
+
     const [symbol, setSymbol] = useState(null);
+    const [interval, setInterval] = useState('5m');
     const [scale, setScale] = useState(0);
 
-    const symbols = ['WAVESUSDT', 'MATICUSDT'];
+    const symbols = props.symbols || ['WAVESUSDT', 'MATICUSDT'];
 
     // const { data: _symbols } = useGetSymbolsQuery();
 
     // const symbols = _symbols && [..._symbols];
 
-    const { data: botMsg } = useGetBotMessagesQuery();
+    // const { data: botMsg } = useGetBotMessagesQuery();
 
     // const symbols = botMsg && [...botMsg.availableSymbols];
 
@@ -87,9 +92,24 @@ export default function Chart() {
     const { data: depth } = useGetDepthQuery({ symbol, limit: 100 }, { skip: !symbol });
 
     const { data: tradelines } = useGetTradeLinesQuery();
-    const { data } = useGetCandlesTicksQuery({ symbol, limit: 500, interval: '5m' }, { skip: !symbol });
+    const { data } = useGetCandlesTicksQuery({ symbol, limit: 500, interval }, { skip: !symbol });
 
     const [setTradeLineMtn] = useSetTradeLinesMutation();
+
+    const viewAmount = function (obj) {
+        if (!obj) {
+            return;
+        }
+
+        const prise: number[] = [obj.lines[0].start.price, obj.lines[1].start.price];
+        const percentLoss = Math.abs(prise[0] - prise[1]) / (prise[0] / 100);
+        const fee = .08;
+        const lossAmount = .5;
+
+        const usdtAmount = lossAmount * (100 / percentLoss - fee);
+
+        alert.show('Expected amount: ' + usdtAmount.toFixed(2) + ' USDT');
+    }
 
     const setTradeLine = function (sendData: any) {
         console.log(sendData);
@@ -104,6 +124,8 @@ export default function Chart() {
         }
 
         setTradeLineMtn(sendData);
+
+        viewAmount(sendData.obj);
     }
 
     useEffect(() => {
@@ -301,6 +323,19 @@ export default function Chart() {
         setSymbol(e.target.value);
     }
 
+    const selectInterval = function (val: string) {
+        for (const trlInst of Object.values(tradelinesInstances.current)) {
+            trlInst.remove();
+        }
+
+        tradelinesInstances.current = {};
+
+        tradelinesDrawn.current = false;
+        maxPriceRef.current = 0;
+
+        setInterval(val);
+    }
+
     symbols && symbols.sort((a: string, b: string) => {
         if (a < b) { return -1; }
         if (a > b) { return 1; }
@@ -344,6 +379,18 @@ export default function Chart() {
                 <option></option>
                 {selOpt}
             </select>
+
+            <div className={css.intervalButtons}>
+                <button
+                    onClick={() => selectInterval('5m')}
+                    className={interval === '5m' && css.btnActive}
+                >5m</button>
+
+                <button
+                    onClick={() => selectInterval('1h')}
+                    className={interval === '1h' && css.btnActive}
+                >1h</button>
+            </div>
 
             {/* <div className={css.scaleButtons}>
                 <button onClick={() => setScale(scale - 100)}>-</button>

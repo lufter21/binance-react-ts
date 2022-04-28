@@ -1,6 +1,7 @@
 import React, { BaseSyntheticEvent, useState } from 'react';
 import { useBotControlMutation, useGetBotMessagesQuery } from '../../app/botApi';
 import { useGetSymbolsQuery } from '../../app/binanceApi';
+import Chart from '../chart/Chart';
 
 const StrItem = function (props: any) {
     return (
@@ -158,6 +159,8 @@ export default function Bot() {
             <button onClick={posMake}> Position Making </button>
             {!!data && !data.resolvePositionMaking && ' is OFF'}
             {!!data && data.resolvePositionMaking && ' is ON'}
+
+            <Chart symbols={symbols} />
 
             <h2>Chose trading symbols</h2>
             <p>
