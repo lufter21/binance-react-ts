@@ -88,13 +88,15 @@ export default function Chart(props?: { symbols?: string[] }) {
 
     // const symbols = botMsg && [...botMsg.availableSymbols];
 
-    const { data: tradeList } = useGetTradesListQuery({ symbol, limit: 1000 }, { skip: !symbol });
+    // const { data: tradeList } = useGetTradesListQuery({ symbol, limit: 1000 }, { skip: !symbol });
+
     const { data: depth } = useGetDepthQuery({ symbol, limit: 100 }, { skip: !symbol });
 
     const { data: tradelines } = useGetTradeLinesQuery();
+    const [setTradeLineMtn] = useSetTradeLinesMutation();
+
     const { data } = useGetCandlesTicksQuery({ symbol, limit: 500, interval }, { skip: !symbol });
 
-    const [setTradeLineMtn] = useSetTradeLinesMutation();
 
     const viewAmount = function (obj) {
         if (!obj) {
@@ -179,15 +181,17 @@ export default function Chart(props?: { symbols?: string[] }) {
 
     }, [scale]);
 
-    useEffect(() => {
-        if (tradeList && maxPriceRef.current > 0) {
-            chartInstRef.current.drawHorVolume(tradeList);
-        }
-    }, [tradeList, maxPriceRef.current]);
+    // useEffect(() => {
+    //     if (tradeList && maxPriceRef.current > 0) {
+    //         chartInstRef.current.drawHorVolume(tradeList);
+    //     }
+    // }, [tradeList, maxPriceRef.current]);
 
     useEffect(() => {
         if (symbol && tradelines && tradelines[symbol] && maxPriceRef.current > 0 && !tradelinesDrawn.current) {
             tradelinesDrawn.current = true;
+
+            console.log('trline draw');
 
             const levels = tradelines[symbol].levels;
             const trends = tradelines[symbol].trends;
@@ -283,6 +287,8 @@ export default function Chart(props?: { symbols?: string[] }) {
     }, [depth, maxPriceRef.current]);
 
     const addNewTrendline = function () {
+        tradelinesDrawn.current = true;
+
         const pInst = new Drawing({
             id: symbol + Math.random() + 'trends',
             canvasWrapEl: paintingCanvasWrapRef.current,
@@ -297,6 +303,8 @@ export default function Chart(props?: { symbols?: string[] }) {
     }
 
     const addNewLevelLine = function () {
+        tradelinesDrawn.current = true;
+
         const pInst = new Drawing({
             id: symbol + Math.random() + 'levels',
             canvasWrapEl: paintingCanvasWrapRef.current,

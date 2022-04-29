@@ -373,7 +373,8 @@ export class DrawChart {
         this.depthCtx.clearRect(0, 0, this.depthCanvEl.width, this.depthCanvEl.height);
 
         this.depthCtx.lineWidth = 1;
-        this.depthCtx.strokeStyle = 'red';
+
+        this.depthCtx.strokeStyle = 'orange';
 
         for (const ask of this.cache[symbol].levelsByDepth.asks.slice(-3, -1)) {
             const Y = this.coordsInstance.getCoordinates(ask.price).y;
@@ -385,7 +386,7 @@ export class DrawChart {
             this.depthCtx.stroke();
         }
 
-        this.depthCtx.strokeStyle = 'green';
+        this.depthCtx.strokeStyle = 'greenyellow';
 
         for (const bid of this.cache[symbol].levelsByDepth.bids.slice(-3, -1)) {
             const Y = this.coordsInstance.getCoordinates(bid.price).y;
@@ -397,16 +398,16 @@ export class DrawChart {
             this.depthCtx.stroke();
         }
 
-        this.depthCtx.strokeStyle = 'black';
-
+        this.depthCtx.strokeStyle = 'red';
         this.depthCtx.beginPath();
-        this.depthCtx.setLineDash([5, 5]);
+        this.depthCtx.setLineDash([15, 5, 2, 5]);
         this.depthCtx.moveTo(0, Math.ceil(maxAskY) + .5);
         this.depthCtx.lineTo(this.depthCanvEl.width, Math.ceil(maxAskY) + .5);
         this.depthCtx.stroke();
 
+        this.depthCtx.strokeStyle = 'green';
         this.depthCtx.beginPath();
-        this.depthCtx.setLineDash([5, 5]);
+        this.depthCtx.setLineDash([15, 5, 2, 5]);
         this.depthCtx.moveTo(0, Math.ceil(maxBidY) + .5);
         this.depthCtx.lineTo(this.depthCanvEl.width, Math.ceil(maxBidY) + .5);
         this.depthCtx.stroke();
