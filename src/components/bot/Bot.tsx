@@ -105,7 +105,7 @@ const TradingSymbol = function (props: {
 export default function Bot() {
     // const { data: _symbols } = useGetSymbolsQuery();
     // const symbols = _symbols && [..._symbols];
-    
+
     const { data, isFetching, isSuccess } = useGetBotMessagesQuery();
     const [botControl] = useBotControlMutation();
 
@@ -181,14 +181,16 @@ export default function Bot() {
 
             <p>{isSuccess && data.status}</p>
             <table>
-                <tr>
-                    <th>symbols</th>
-                    <th>resolve Position</th>
-                    <th>position</th>
-                    <th>ATR</th>
-                    <th>moved percent from atr (less 30%)</th>
-                </tr>
-                {strategies}
+                <tbody>
+                    <tr>
+                        <th>symbols</th>
+                        <th>resolve Position</th>
+                        <th>position</th>
+                        <th>ATR</th>
+                        <th>moved percent from atr (less 30%)</th>
+                    </tr>
+                    {strategies}
+                </tbody>
             </table>
             <div>
                 <h2>positions</h2>

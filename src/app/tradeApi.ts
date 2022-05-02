@@ -1,5 +1,5 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
-import { binanceWsApiUrl, serverApiBaseUrl, serverWsApiUrl } from './apiBaseUrl'
+import { serverApiBaseUrl } from './apiBaseUrl'
 
 export const tradeApi = createApi({
     baseQuery: fetchBaseQuery({ baseUrl: serverApiBaseUrl }),

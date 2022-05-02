@@ -1,5 +1,5 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
-import { binanceApiBaseUrl, binanceWsApiUrl, serverApiBaseUrl, serverWsApiUrl } from './apiBaseUrl'
+import { binanceApiBaseUrl, binanceWsApiUrl } from './apiBaseUrl'
 
 export type Candle = {
     openTime: number;
@@ -16,7 +16,7 @@ export const binanceApi = createApi({
     endpoints: (build) => ({
         getSymbols: build.query<string[], void>({
             query: () => ({
-                url: 'fapi/v1/exchangeInfo'
+                url: 'api/v3/exchangeInfo'
             }),
 
             transformResponse: (response: any, meta, arg) => {
@@ -26,7 +26,7 @@ export const binanceApi = createApi({
 
         getCandlesTicks: build.query<Candle[], { symbol: string; limit: number; interval: string; }>({
             query: (req) => ({
-                url: 'fapi/v1/klines',
+                url: 'api/v3/klines',
                 params: req
             }),
 
@@ -99,7 +99,7 @@ export const binanceApi = createApi({
 
         getTradesList: build.query<{ price: number, buy: number, sell: number }[], { symbol: string; limit: number; }>({
             query: (req) => ({
-                url: '/fapi/v1/trades',
+                url: '/api/v3/trades',
                 params: req
             }),
 
@@ -145,7 +145,7 @@ export const binanceApi = createApi({
                                 let isNew = true;
 
                                 for (const draftItem of draftData) {
-                                    if (draftItem.price == +price) {
+                                    if (draftItem.price === +price) {
                                         isNew = false;
 
                                         if (isBuyerMaker) {
@@ -185,12 +185,12 @@ export const binanceApi = createApi({
 
         getDepth: build.query<{ bids: string[][]; asks: string[][]; lastUpdateId: number; }, { symbol: string; limit: number; }>({
             query: (req) => ({
-                url: '/fapi/v1/depth',
+                url: '/api/v3/depth',
                 params: req
             }),
 
             async onCacheEntryAdded(arg, { updateCachedData, cacheDataLoaded, cacheEntryRemoved }) {
-                const stream = arg.symbol.toLowerCase() + '@depth@500ms';
+                const stream = arg.symbol.toLowerCase() + '@depth@1000ms';
 
                 const ws = new WebSocket(binanceWsApiUrl + '/stream?streams=' + stream);
 
@@ -214,15 +214,15 @@ export const binanceApi = createApi({
 
                                 const { s: symbol, b: bids, a: asks, u: finalUpdId, pu: finalUpdIdInLast } = res;
 
-                                if (finalUpdId < result.lastUpdateId) {
-                                    return;
-                                }
+                                // if (finalUpdId < result.lastUpdateId) {
+                                //     return;
+                                // }
 
-                                if (lastFinalUpdId && finalUpdIdInLast !== lastFinalUpdId) {
-                                    return;
-                                } else {
-                                    lastFinalUpdId = finalUpdId;
-                                }
+                                // if (lastFinalUpdId && finalUpdIdInLast !== lastFinalUpdId) {
+                                //     return;
+                                // } else {
+                                //     lastFinalUpdId = finalUpdId;
+                                // }
 
                                 // Bids
                                 bids.reverse();
@@ -233,7 +233,7 @@ export const binanceApi = createApi({
                                     let isset = false;
 
                                     for (const newB of bids) {
-                                        if (newB[0] == curB[0]) {
+                                        if (newB[0] === curB[0]) {
                                             if (+newB[1] !== 0) {
                                                 prelBids.push(newB);
                                             }
@@ -264,7 +264,7 @@ export const binanceApi = createApi({
 
                                     resultBids.push(cBid);
 
-                                    if (i == prelBids.length - 1) {
+                                    if (i === prelBids.length - 1) {
                                         for (const newB of bids) {
                                             if (newB[0] !== cBid[0] && +newB[1] !== 0 && +cBid[0] > +newB[0]) {
                                                 resultBids.push(newB);
@@ -280,7 +280,7 @@ export const binanceApi = createApi({
                                     let isset = false;
 
                                     for (const newA of asks) {
-                                        if (newA[0] == curA[0]) {
+                                        if (newA[0] === curA[0]) {
                                             if (+newA[1] !== 0) {
                                                 prelAsks.push(newA);
                                             }
@@ -307,7 +307,7 @@ export const binanceApi = createApi({
                                                 resultAsks.push(newA);
                                             }
 
-                                            if (i == prelAsks.length - 1 && +cAsk[0] < +newA[0]) {
+                                            if (i === prelAsks.length - 1 && +cAsk[0] < +newA[0]) {
                                                 resultAsks.push(newA);
                                             }
                                         }
@@ -315,7 +315,7 @@ export const binanceApi = createApi({
 
                                     resultAsks.push(cAsk);
 
-                                    if (i == prelAsks.length - 1) {
+                                    if (i === prelAsks.length - 1) {
                                         for (const newA of asks) {
                                             if (newA[0] !== cAsk[0] && +newA[1] !== 0 && +cAsk[0] < +newA[0]) {
                                                 resultAsks.push(newA);

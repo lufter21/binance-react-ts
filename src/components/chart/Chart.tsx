@@ -1,10 +1,10 @@
 import React, { BaseSyntheticEvent, useEffect, useRef, useState } from 'react';
-import { useGetCandlesTicksQuery, useGetDepthQuery, useGetSymbolsQuery, useGetTradesListQuery } from '../../app/binanceApi';
+import { useGetCandlesTicksQuery, useGetDepthQuery } from '../../app/binanceApi';
 import { DrawChart } from './DrawChart';
 import css from './Chart.module.scss';
 import { Drawing } from './Drawing';
 import { Coordinates } from './Coordinates';
-import { useGetBotMessagesQuery, useGetTradeLinesQuery, useSetTradeLinesMutation } from '../../app/botApi';
+import { useGetTradeLinesQuery, useSetTradeLinesMutation } from '../../app/botApi';
 import { useAlert } from 'react-alert';
 
 // move
@@ -103,8 +103,15 @@ export default function Chart(props?: { symbols?: string[] }) {
             return;
         }
 
-        const prise: number[] = [obj.lines[0].start.price, obj.lines[1].start.price];
-        const percentLoss = Math.abs(prise[0] - prise[1]) / (prise[0] / 100);
+        let price: number[];
+
+        if (obj.type === 'trends') {
+            price = [obj.lines[0].start.price, obj.lines[1].start.price];
+        } else {
+            price = obj.price;
+        }
+        
+        const percentLoss = Math.abs(price[0] - price[1]) / (price[0] / 100);
         const fee = .08;
         const lossAmount = .5;
 
@@ -391,12 +398,12 @@ export default function Chart(props?: { symbols?: string[] }) {
             <div className={css.intervalButtons}>
                 <button
                     onClick={() => selectInterval('5m')}
-                    className={interval === '5m' && css.btnActive}
+                    className={interval === '5m' ? css.btnActive : undefined}
                 >5m</button>
 
                 <button
                     onClick={() => selectInterval('1h')}
-                    className={interval === '1h' && css.btnActive}
+                    className={interval === '1h' ? css.btnActive : undefined}
                 >1h</button>
             </div>
 

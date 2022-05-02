@@ -376,7 +376,7 @@ export class DrawChart {
 
         this.depthCtx.strokeStyle = 'orange';
 
-        for (const ask of this.cache[symbol].levelsByDepth.asks.slice(-3, -1)) {
+        for (const ask of this.cache[symbol].levelsByDepth.asks.slice(-2, -1)) {
             const Y = this.coordsInstance.getCoordinates(ask.price).y;
 
             this.depthCtx.beginPath();
@@ -388,7 +388,7 @@ export class DrawChart {
 
         this.depthCtx.strokeStyle = 'greenyellow';
 
-        for (const bid of this.cache[symbol].levelsByDepth.bids.slice(-3, -1)) {
+        for (const bid of this.cache[symbol].levelsByDepth.bids.slice(-2, -1)) {
             const Y = this.coordsInstance.getCoordinates(bid.price).y;
 
             this.depthCtx.beginPath();

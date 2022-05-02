@@ -39,9 +39,9 @@ export class Drawing {
         this.id = id;
         this.type = type;
 
-        if (this.type == 'trends') {
+        if (this.type === 'trends') {
             this.maxPointsCount = 4;
-        } else if (this.type == 'levels') {
+        } else if (this.type === 'levels') {
             this.maxPointsCount = 2;
         }
 
@@ -63,7 +63,7 @@ export class Drawing {
         this.mouseEvents();
     }
 
-    reInit(){
+    reInit() {
         this.canvasWrapEl.style.width = this.canvasWidth + 'px';
         this.canvasWrapEl.style.height = this.canvasHeight + 'px';
 
@@ -84,11 +84,11 @@ export class Drawing {
         this.mC = e => {
             const { x, y } = mouseCoords(e);
 
-            if (this.type == 'trends') {
+            if (this.type === 'trends') {
                 if (this.points.length < this.maxPointsCount) {
                     this.setPoint({ pointId: this.points.length, x, y });
 
-                    if (this.points.length == 2) {
+                    if (this.points.length === 2) {
                         for (const point of this.points) {
                             this.setPoint({
                                 pointId: this.points.length,
@@ -111,7 +111,7 @@ export class Drawing {
                     }
                 }
 
-            } else if (this.type == 'levels') {
+            } else if (this.type === 'levels') {
                 if (this.points.length < this.maxPointsCount) {
                     this.setPoint({ pointId: this.points.length, x, y });
                     this.setPoint({ pointId: this.points.length, x, y: y - 25 });
@@ -137,7 +137,7 @@ export class Drawing {
                 }
             }
 
-            if (isHighlight === 0 && this.points.length == this.maxPointsCount && this.moving) {
+            if (isHighlight === 0 && this.points.length === this.maxPointsCount && this.moving) {
                 this.moving = false;
                 this.sendPointsData();
             }
@@ -147,7 +147,7 @@ export class Drawing {
         this.mM = e => {
             const { x, y } = mouseCoords(e);
 
-            if (this.type == 'trends') {
+            if (this.type === 'trends') {
                 for (const point of this.points) {
                     if (point.highlight) {
 
@@ -158,7 +158,7 @@ export class Drawing {
                                 y: this.points[point.pointId + 2].coords.y + (y - point.coords.y)
                             });
                         } else {
-                            if (point.pointId == 2) {
+                            if (point.pointId === 2) {
                                 this.setPoint({
                                     pointId: 3,
                                     x: this.points[3].coords.x + (x - point.coords.x),
@@ -178,10 +178,10 @@ export class Drawing {
                     }
                 }
 
-            } else if (this.type == 'levels') {
+            } else if (this.type === 'levels') {
                 for (const point of this.points) {
                     if (point.highlight) {
-                        if (point.pointId == 0) {
+                        if (point.pointId === 0) {
                             this.setPoint({
                                 pointId: 1,
                                 x,
@@ -197,9 +197,9 @@ export class Drawing {
         }
 
         this.kD = e => {
-            if (e.key == 'Delete') {
+            if (e.key === 'Delete') {
                 for (const point of this.points) {
-                    if (point.highlight == true && this.moving) {
+                    if (point.highlight === true && this.moving) {
                         this.sendPointsData('delete');
                     }
                 }
@@ -228,7 +228,7 @@ export class Drawing {
 
         } else {
             for (const point of this.points) {
-                if (point.pointId == opt.pointId) {
+                if (point.pointId === opt.pointId) {
                     point.highlight = opt.highlight !== undefined ? opt.highlight : point.highlight;
                     point.coords.x = opt.x !== undefined ? Math.round(opt.x) : point.coords.x;
                     point.coords.y = opt.y !== undefined ? Math.round(opt.y) : point.coords.y;
@@ -242,8 +242,8 @@ export class Drawing {
     drawScene() {
         this.ctx.clearRect(0, 0, this.canvEl.width, this.canvEl.height);
 
-        if (this.points.length == this.maxPointsCount) {
-            if (this.type == 'trends') {
+        if (this.points.length === this.maxPointsCount) {
+            if (this.type === 'trends') {
                 this.ctx.fillStyle = 'rgba(255,180,242,.35)';
                 this.ctx.beginPath();
                 this.ctx.moveTo(this.points[0].coords.x, this.points[0].coords.y);
@@ -279,7 +279,7 @@ export class Drawing {
                     this.ctx.fillText('↑', this.points[1].coords.x, this.points[1].coords.y + 21);
                 }
 
-            } else if (this.type == 'levels') {
+            } else if (this.type === 'levels') {
                 this.ctx.fillStyle = 'rgba(255,180,242,.35)';
                 this.ctx.beginPath();
                 this.ctx.moveTo(0, this.points[0].coords.y);
@@ -290,7 +290,7 @@ export class Drawing {
                 this.ctx.fill();
 
                 for (const point of this.points) {
-                    this.ctx.strokeStyle = point.highlight ? '#35ff00' : (point.pointId == 1 ? '#c3a0bd' : '#ff6800');
+                    this.ctx.strokeStyle = point.highlight ? '#35ff00' : (point.pointId === 1 ? '#c3a0bd' : '#ff6800');
                     this.ctx.lineWidth = 1;
                     this.ctx.beginPath();
                     this.ctx.moveTo(0, point.coords.y + .5);
@@ -312,7 +312,7 @@ export class Drawing {
             }
         }
 
-        if (this.type == 'trends') {
+        if (this.type === 'trends') {
             for (const point of this.points) {
                 this.ctx.fillStyle = point.highlight ? '#35ff00' : (point.pointId > 1 ? '#c3a0bd' : '#ff6800');
                 this.ctx.beginPath();
@@ -320,7 +320,7 @@ export class Drawing {
                 this.ctx.fill();
             }
 
-        } else if (this.type == 'levels') {
+        } else if (this.type === 'levels') {
             for (const point of this.points) {
                 this.ctx.fillStyle = point.highlight ? '#35ff00' : '#ff6800';
                 this.ctx.beginPath();
@@ -331,14 +331,14 @@ export class Drawing {
     }
 
     sendPointsData(opt?: string) {
-        if (opt == 'delete') {
+        if (opt === 'delete') {
             const sendData = {
                 removeId: this.id
             };
 
             this.sendFn(sendData);
 
-        } else if (this.type == 'levels') {
+        } else if (this.type === 'levels') {
             const sendData = {
                 obj: {
                     id: this.id,
@@ -354,7 +354,7 @@ export class Drawing {
 
             this.sendFn(sendData);
 
-        } else if (this.type == 'trends') {
+        } else if (this.type === 'trends') {
             const sendData = {
                 obj: {
                     id: this.id,
@@ -378,7 +378,7 @@ export class Drawing {
     }
 
     drawWithData(input: any) {
-        if (this.type == 'levels') {
+        if (this.type === 'levels') {
             const inp: {
                 id: string;
                 price: number[];
@@ -390,7 +390,7 @@ export class Drawing {
                 this.setPoint({ pointId: this.points.length, x, y });
             }
 
-        } else if (this.type == 'trends') {
+        } else if (this.type === 'trends') {
             const inp: {
                 id: string;
                 lines: {

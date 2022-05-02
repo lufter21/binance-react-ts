@@ -1,12 +1,8 @@
 import React, { useRef } from 'react';
 import { useGetTradeMessagesQuery, useSetPositionMutation } from '../app/tradeApi';
 
-const symbols = ['ADAUSDT', 'ATOMUSDT', 'BATUSDT', 'BCHUSDT', 'BNBUSDT', 'BTCUSDT', 'DASHUSDT', 'DOGEUSDT', 'EOSUSDT', 'ETCUSDT', 'ETHUSDT', 'IOSTUSDT', 'IOTAUSDT', 'LINKUSDT', 'LTCUSDT', 'MATICUSDT', 'NEOUSDT', 'ONTUSDT', 'QTUMUSDT', 'RVNUSDT', 'TRXUSDT', 'VETUSDT', 'XLMUSDT', 'XMRUSDT', 'XRPUSDT', 'ZECUSDT', 'XTZUSDT'];
-
-
-
 export default function TradePage() {
-    const { data, isFetching, isSuccess } = useGetTradeMessagesQuery();
+    const { data, isFetching } = useGetTradeMessagesQuery();
     const [sendPosition] = useSetPositionMutation();
     const refPercentLoss = useRef<any>();
     const refStopLoss = useRef<any>();
