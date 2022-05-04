@@ -1,8 +1,10 @@
 import React, { BaseSyntheticEvent, useEffect, useRef, useState } from 'react';
-import { useGetCandlesTicksQuery, useGetDepthQuery } from '../../app/binanceApi';
+import { useGetCandlesTicksQuery, useGetDepthQuery } from '../../app/binanceFutApi';
 import { DrawChart } from './DrawChart';
 import css from './Chart.module.scss';
+import { Drawing } from './Drawing';
 import { Coordinates } from './Coordinates';
+import { useGetTradeLinesQuery, useSetTradeLinesMutation } from '../../app/botApi';
 import { useAlert } from 'react-alert';
 
 // move
@@ -53,13 +55,16 @@ const moveCanvas = function (contEl, moveXEls, moveYEls) {
 
 const initDimesions = [4333, 1333];
 
-export default function Chart(props?: { symbols?: string[] }) {
+export default function ChartFut(props?: { symbols?: string[] }) {
+
     const canvasDims = useRef<number[]>(initDimesions);
     const tradelinesDrawn = useRef<boolean>(false);
+    const tradelinesInstances = useRef<{ [id: string]: Drawing }>({});
     const maxPriceRef = useRef<number>(0);
     const coordsInstRef = useRef<Coordinates>();
     const chartInstRef = useRef<DrawChart>();
     const containerRef = useRef<HTMLDivElement>();
+    const paintingCanvasWrapRef = useRef<HTMLDivElement>();
     const canvInnerRef = useRef<HTMLDivElement>();
     const linesCanvasRef = useRef<HTMLCanvasElement>();
     const horVolCanvasRef = useRef<HTMLCanvasElement>();
@@ -73,12 +78,64 @@ export default function Chart(props?: { symbols?: string[] }) {
     const [interval, setInterval] = useState('5m');
     const [scale, setScale] = useState(0);
 
-    const symbols = [...props.symbols] || ['WAVESUSDT', 'MATICUSDT'];
+    console.log(props);
+
+    const symbols = props.symbols && [...props.symbols] || ['WAVESUSDT', 'MATICUSDT'];
+
+    // const { data: _symbols } = useGetSymbolsQuery();
+
+    // const symbols = _symbols && [..._symbols];
+
+    // const { data: botMsg } = useGetBotMessagesQuery();
+
+    // const symbols = botMsg && [...botMsg.availableSymbols];
 
     // const { data: tradeList } = useGetTradesListQuery({ symbol, limit: 1000 }, { skip: !symbol });
 
     const { data } = useGetCandlesTicksQuery({ symbol, limit: 500, interval }, { skip: !symbol });
+
     const { data: depth } = useGetDepthQuery({ symbol, limit: 100 }, { skip: !symbol });
+
+    const { data: tradelines } = useGetTradeLinesQuery();
+    const [setTradeLineMtn] = useSetTradeLinesMutation();
+
+    const viewAmount = function (obj) {
+        if (!obj) {
+            return;
+        }
+
+        let price: number[];
+
+        if (obj.type === 'trends') {
+            price = [obj.lines[0].start.price, obj.lines[1].start.price];
+        } else {
+            price = obj.price;
+        }
+        
+        const percentLoss = Math.abs(price[0] - price[1]) / (price[0] / 100);
+        const fee = .08;
+        const lossAmount = .5;
+
+        const usdtAmount = lossAmount * (100 / percentLoss - fee);
+
+        alert.show('Expected amount: ' + usdtAmount.toFixed(2) + ' USDT');
+    }
+
+    const setTradeLine = function (sendData: any) {
+        if (sendData.removeId) {
+            if (tradelinesInstances.current[sendData.removeId]) {
+                tradelinesInstances.current[sendData.removeId].remove();
+            }
+
+            delete tradelinesInstances.current[sendData.removeId];
+        } else {
+            sendData.obj.symbol = symbol;
+        }
+
+        setTradeLineMtn(sendData);
+
+        viewAmount(sendData.obj);
+    }
 
     useEffect(() => {
         const coords = new Coordinates({
@@ -122,6 +179,13 @@ export default function Chart(props?: { symbols?: string[] }) {
         chartInstRef.current.canvasWidth = canvasDims.current[0];
         chartInstRef.current.canvasHeight = canvasDims.current[1];
         chartInstRef.current.reInit();
+
+        for (const trlInst of Object.values(tradelinesInstances.current)) {
+            trlInst.canvasWidth = canvasDims.current[0];
+            trlInst.canvasHeight = canvasDims.current[1];
+            trlInst.reInit();
+        }
+
     }, [scale]);
 
     // useEffect(() => {
@@ -129,6 +193,53 @@ export default function Chart(props?: { symbols?: string[] }) {
     //         chartInstRef.current.drawHorVolume(tradeList);
     //     }
     // }, [tradeList, maxPriceRef.current]);
+
+    useEffect(() => {
+        if (symbol && tradelines && tradelines[symbol] && maxPriceRef.current > 0 && !tradelinesDrawn.current) {
+            tradelinesDrawn.current = true;
+
+            console.log('trline draw');
+
+            const levels = tradelines[symbol].levels;
+            const trends = tradelines[symbol].trends;
+
+            for (const lvl of levels) {
+
+                const pInst = new Drawing({
+                    id: lvl.id,
+                    canvasWrapEl: paintingCanvasWrapRef.current,
+                    canvasWidth: canvasDims.current[0],
+                    canvasHeight: canvasDims.current[1],
+                    coordsInstance: coordsInstRef.current,
+                    type: 'levels',
+                    sendFn: setTradeLine
+                });
+
+                tradelinesInstances.current[pInst.id] = pInst;
+
+                pInst.drawWithData(lvl);
+
+            }
+
+            for (const trd of trends) {
+                const pInst = new Drawing({
+                    id: trd.id,
+                    canvasWrapEl: paintingCanvasWrapRef.current,
+                    canvasWidth: canvasDims.current[0],
+                    canvasHeight: canvasDims.current[1],
+                    coordsInstance: coordsInstRef.current,
+                    type: 'trends',
+                    sendFn: setTradeLine
+                });
+
+                tradelinesInstances.current[pInst.id] = pInst;
+
+                pInst.drawWithData(trd);
+
+            }
+
+        }
+    }, [tradelines, maxPriceRef.current, symbol]);
 
     useEffect(() => {
         // if (isInitialMount.current) {
@@ -182,13 +293,61 @@ export default function Chart(props?: { symbols?: string[] }) {
         }
     }, [depth, maxPriceRef.current]);
 
+    const addNewTrendline = function () {
+        tradelinesDrawn.current = true;
+
+        const pInst = new Drawing({
+            id: symbol + Math.random() + 'trends',
+            canvasWrapEl: paintingCanvasWrapRef.current,
+            canvasWidth: canvasDims.current[0],
+            canvasHeight: canvasDims.current[1],
+            coordsInstance: coordsInstRef.current,
+            type: 'trends',
+            sendFn: setTradeLine
+        });
+
+        tradelinesInstances.current[pInst.id] = pInst;
+    }
+
+    const addNewLevelLine = function () {
+        tradelinesDrawn.current = true;
+
+        const pInst = new Drawing({
+            id: symbol + Math.random() + 'levels',
+            canvasWrapEl: paintingCanvasWrapRef.current,
+            canvasWidth: canvasDims.current[0],
+            canvasHeight: canvasDims.current[1],
+            coordsInstance: coordsInstRef.current,
+            type: 'levels',
+            sendFn: setTradeLine
+        });
+
+        tradelinesInstances.current[pInst.id] = pInst;
+    }
+
     const selectSymbol = function (e: BaseSyntheticEvent) {
+        for (const trlInst of Object.values(tradelinesInstances.current)) {
+            trlInst.remove();
+        }
+
+        tradelinesInstances.current = {};
+
+        tradelinesDrawn.current = false;
         maxPriceRef.current = 0;
+
         setSymbol(e.target.value);
     }
 
     const selectInterval = function (val: string) {
+        for (const trlInst of Object.values(tradelinesInstances.current)) {
+            trlInst.remove();
+        }
+
+        tradelinesInstances.current = {};
+
+        tradelinesDrawn.current = false;
         maxPriceRef.current = 0;
+
         setInterval(val);
     }
 
@@ -209,6 +368,17 @@ export default function Chart(props?: { symbols?: string[] }) {
                         <canvas ref={linesCanvasRef} className={css.linesCanvas}></canvas>
                         <canvas ref={horVolCanvasRef} className={css.horVolumeCanvas}></canvas>
                         <canvas ref={depthCanvasRef} className={css.depthCanvas}></canvas>
+                    </div>
+                </div>
+
+                <div className={css.paintingLayer}>
+                    <div className={css.paintingLayer__controls}>
+                        <p>Drawing</p>
+                        <button onClick={addNewTrendline}>Trend</button>
+                        <button onClick={addNewLevelLine}>Level</button>
+                    </div>
+                    <div className={css.paintingLayer__inner + ' move-axis-x move-axis-y'}>
+                        <div ref={paintingCanvasWrapRef} className={css.paintingCanvasWrap}> </div>
                     </div>
                 </div>
 

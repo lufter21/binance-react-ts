@@ -4,6 +4,7 @@ import { botApi } from './botApi';
 import { binanceApi } from './binanceApi';
 import { tradeApi } from './tradeApi';
 import { volatilityApi } from './volatilityApi';
+import { binanceFutApi } from './binanceFutApi';
 
 export const store = configureStore({
   reducer: {
@@ -12,12 +13,14 @@ export const store = configureStore({
     [botApi.reducerPath]: botApi.reducer,
     [tradeApi.reducerPath]: tradeApi.reducer,
     [binanceApi.reducerPath]: binanceApi.reducer,
+    [binanceFutApi.reducerPath]: binanceFutApi.reducer,
   },
   middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(
     volatilityApi.middleware,
     botApi.middleware,
     tradeApi.middleware,
     binanceApi.middleware,
+    binanceFutApi.middleware,
   ),
 });
 

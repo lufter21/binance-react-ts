@@ -1,5 +1,5 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import { binanceApiBaseUrl, binanceWsApiUrl } from './apiBaseUrl';
+import { binanceFutApiBaseUrl, binanceFutWsApiUrl } from './apiBaseUrl';
 
 export type Candle = {
     openTime: number;
@@ -9,27 +9,24 @@ export type Candle = {
     low: number;
 };
 
-export const binanceApi = createApi({
-    baseQuery: fetchBaseQuery({ baseUrl: binanceApiBaseUrl }),
-    reducerPath: 'binanceApi',
+export const binanceFutApi = createApi({
+    baseQuery: fetchBaseQuery({ baseUrl: binanceFutApiBaseUrl }),
+    reducerPath: 'binanceFutApi',
     // tagTypes: ['Chart'],
     endpoints: (build) => ({
         getSymbols: build.query<string[], void>({
             query: () => ({
-                url: 'api/v3/exchangeInfo'
+                url: 'fapi/v1/exchangeInfo'
             }),
 
             transformResponse: (response: any, meta, arg) => {
-                const symbols = [...response.symbols];
-                const ftSymbols = symbols.filter(s => s.quoteAsset === 'USDT');
-
-                return ftSymbols.map(s => s.symbol);
+                return response.symbols.map(s => s.symbol);
             },
         }),
 
         getCandlesTicks: build.query<Candle[], { symbol: string; limit: number; interval: string; }>({
             query: (req) => ({
-                url: 'api/v3/klines',
+                url: 'fapi/v1/klines',
                 params: req
             }),
 
@@ -55,7 +52,7 @@ export const binanceApi = createApi({
                 // create a websocket connection when the cache subscription starts
                 const stream = arg.symbol.toLowerCase() + '@kline_' + arg.interval;
 
-                const ws = new WebSocket(binanceWsApiUrl + '/stream?streams=' + stream);
+                const ws = new WebSocket(binanceFutWsApiUrl + '/stream?streams=' + stream);
                 try {
                     await cacheDataLoaded;
 
@@ -102,7 +99,7 @@ export const binanceApi = createApi({
 
         getTradesList: build.query<{ price: number, buy: number, sell: number }[], { symbol: string; limit: number; }>({
             query: (req) => ({
-                url: 'api/v3/trades',
+                url: 'fapi/v1/trades',
                 params: req
             }),
 
@@ -133,7 +130,7 @@ export const binanceApi = createApi({
             async onCacheEntryAdded(arg, { updateCachedData, cacheDataLoaded, cacheEntryRemoved }) {
                 const stream = arg.symbol.toLowerCase() + '@aggTrade';
 
-                const ws = new WebSocket(binanceWsApiUrl + '/stream?streams=' + stream);
+                const ws = new WebSocket(binanceFutWsApiUrl + '/stream?streams=' + stream);
                 try {
                     await cacheDataLoaded;
 
@@ -188,14 +185,14 @@ export const binanceApi = createApi({
 
         getDepth: build.query<{ bids: string[][]; asks: string[][]; lastUpdateId: number; }, { symbol: string; limit: number; }>({
             query: (req) => ({
-                url: 'api/v3/depth',
+                url: 'fapi/v1/depth',
                 params: req
             }),
 
             async onCacheEntryAdded(arg, { updateCachedData, cacheDataLoaded, cacheEntryRemoved }) {
-                const stream = arg.symbol.toLowerCase() + '@depth@1000ms';
+                const stream = arg.symbol.toLowerCase() + '@depth@500ms';
 
-                const ws = new WebSocket(binanceWsApiUrl + '/stream?streams=' + stream);
+                const ws = new WebSocket(binanceFutWsApiUrl + '/stream?streams=' + stream);
 
                 try {
                     const firstData = await cacheDataLoaded;
@@ -210,18 +207,18 @@ export const binanceApi = createApi({
                                 const res: {
                                     s: string;
                                     u: number;
-                                    U: number;
+                                    pu: number;
                                     b: string[][];
                                     a: string[][];
                                 } = JSON.parse(event.data).data;
 
-                                const { s: symbol, b: bids, a: asks, U: firstUpdId, u: finalUpdId } = res;
+                                const { s: symbol, b: bids, a: asks, pu: finalUpdIdInLast, u: finalUpdId } = res;
 
-                                if (finalUpdId <= result.lastUpdateId) {
+                                if (finalUpdId < result.lastUpdateId) {
                                     return;
                                 }
 
-                                if (lastFinalUpdId && firstUpdId !== lastFinalUpdId + 1) {
+                                if (lastFinalUpdId && finalUpdIdInLast !== lastFinalUpdId) {
                                     return;
                                 } else {
                                     lastFinalUpdId = finalUpdId;
@@ -358,4 +355,4 @@ export const {
     useGetSymbolsQuery,
     useGetTradesListQuery,
     useGetDepthQuery
-} = binanceApi;
+} = binanceFutApi;

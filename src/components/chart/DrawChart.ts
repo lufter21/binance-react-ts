@@ -342,27 +342,27 @@ export class DrawChart {
         const maxAsk = asksArr[0];
         const maxBid = bidsArr[0];
 
-        if (
-            !this.cache[symbol].levelsByDepth.asks.length
-            || this.cache[symbol].levelsByDepth.asks.slice(-1)[0].price !== +maxAsk[0]
-        ) {
-            this.cache[symbol].levelsByDepth.asks.push({
-                price: +maxAsk[0],
-                volume: +maxAsk[1],
-                ticks: 1
-            });
-        }
+        // if (
+        //     !this.cache[symbol].levelsByDepth.asks.length
+        //     || this.cache[symbol].levelsByDepth.asks.slice(-1)[0].price !== +maxAsk[0]
+        // ) {
+        //     this.cache[symbol].levelsByDepth.asks.push({
+        //         price: +maxAsk[0],
+        //         volume: +maxAsk[1],
+        //         ticks: 1
+        //     });
+        // }
 
-        if (
-            !this.cache[symbol].levelsByDepth.bids.length
-            || this.cache[symbol].levelsByDepth.bids.slice(-1)[0].price !== +maxBid[0]
-        ) {
-            this.cache[symbol].levelsByDepth.bids.push({
-                price: +maxBid[0],
-                volume: +maxBid[1],
-                ticks: 1
-            });
-        }
+        // if (
+        //     !this.cache[symbol].levelsByDepth.bids.length
+        //     || this.cache[symbol].levelsByDepth.bids.slice(-1)[0].price !== +maxBid[0]
+        // ) {
+        //     this.cache[symbol].levelsByDepth.bids.push({
+        //         price: +maxBid[0],
+        //         volume: +maxBid[1],
+        //         ticks: 1
+        //     });
+        // }
 
         const maxAskY = this.coordsInstance.getCoordinates(+maxAsk[0]).y;
         const maxBidY = this.coordsInstance.getCoordinates(+maxBid[0]).y;
@@ -376,8 +376,8 @@ export class DrawChart {
 
         this.depthCtx.strokeStyle = 'orange';
 
-        for (const ask of this.cache[symbol].levelsByDepth.asks.slice(-2, -1)) {
-            const Y = this.coordsInstance.getCoordinates(ask.price).y;
+        for (const ask of asksArr.slice(1, 3)) {
+            const Y = this.coordsInstance.getCoordinates(+ask[0]).y;
 
             this.depthCtx.beginPath();
             this.depthCtx.setLineDash([0]);
@@ -386,32 +386,30 @@ export class DrawChart {
             this.depthCtx.stroke();
         }
 
-        this.depthCtx.strokeStyle = 'greenyellow';
-
-        for (const bid of this.cache[symbol].levelsByDepth.bids.slice(-2, -1)) {
-            const Y = this.coordsInstance.getCoordinates(bid.price).y;
-
-            this.depthCtx.beginPath();
-            this.depthCtx.setLineDash([0]);
-            this.depthCtx.moveTo(0, Math.ceil(Y) + .5);
-            this.depthCtx.lineTo(this.depthCanvEl.width, Math.ceil(Y) + .5);
-            this.depthCtx.stroke();
-        }
-
-        this.depthCtx.strokeStyle = 'red';
         this.depthCtx.beginPath();
         this.depthCtx.setLineDash([15, 5, 2, 5]);
         this.depthCtx.moveTo(0, Math.ceil(maxAskY) + .5);
         this.depthCtx.lineTo(this.depthCanvEl.width, Math.ceil(maxAskY) + .5);
         this.depthCtx.stroke();
 
-        this.depthCtx.strokeStyle = 'green';
+        this.depthCtx.strokeStyle = 'greenyellow';
+
+        for (const bid of bidsArr.slice(1, 3)) {
+            const Y = this.coordsInstance.getCoordinates(+bid[0]).y;
+
+            this.depthCtx.beginPath();
+            this.depthCtx.setLineDash([0]);
+            this.depthCtx.moveTo(0, Math.ceil(Y) + .5);
+            this.depthCtx.lineTo(this.depthCanvEl.width, Math.ceil(Y) + .5);
+            this.depthCtx.stroke();
+        }
+
         this.depthCtx.beginPath();
         this.depthCtx.setLineDash([15, 5, 2, 5]);
         this.depthCtx.moveTo(0, Math.ceil(maxBidY) + .5);
         this.depthCtx.lineTo(this.depthCanvEl.width, Math.ceil(maxBidY) + .5);
         this.depthCtx.stroke();
-
+        
         this.depthCtx.strokeStyle = 'lightgray';
 
         this.depthCtx.beginPath();
