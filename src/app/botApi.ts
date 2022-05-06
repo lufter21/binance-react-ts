@@ -83,10 +83,11 @@ export const botApi = createApi({
         }),
 
         setTradeLines: build.mutation<Tradelines, {
-            type: 'trends' | 'levels';
-            symbol: string;
-            opt: any;
-            removeId: string;
+            type?: 'trends' | 'levels';
+            symbol?: string;
+            opt?: any;
+            removeId?: string;
+            removeAll?: string;
         }>({
             query: (body) => ({
                 url: 'tradelines',

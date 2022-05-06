@@ -78,9 +78,7 @@ export default function ChartFut(props?: { symbols?: string[] }) {
     const [interval, setInterval] = useState('5m');
     const [scale, setScale] = useState(0);
 
-    console.log(props);
-
-    const symbols = props.symbols && [...props.symbols] || ['WAVESUSDT', 'MATICUSDT'];
+    const symbols = (props.symbols && [...props.symbols]) || ['WAVESUSDT', 'MATICUSDT'];
 
     // const { data: _symbols } = useGetSymbolsQuery();
 
@@ -111,7 +109,7 @@ export default function ChartFut(props?: { symbols?: string[] }) {
         } else {
             price = obj.price;
         }
-        
+
         const percentLoss = Math.abs(price[0] - price[1]) / (price[0] / 100);
         const fee = .08;
         const lossAmount = .5;
@@ -313,7 +311,7 @@ export default function ChartFut(props?: { symbols?: string[] }) {
         tradelinesDrawn.current = true;
 
         const pInst = new Drawing({
-            id: symbol + Math.random() + 'levels',
+            id: 'd_' + symbol + Math.random() + 'levels',
             canvasWrapEl: paintingCanvasWrapRef.current,
             canvasWidth: canvasDims.current[0],
             canvasHeight: canvasDims.current[1],
@@ -323,6 +321,18 @@ export default function ChartFut(props?: { symbols?: string[] }) {
         });
 
         tradelinesInstances.current[pInst.id] = pInst;
+    }
+
+    const removeAllTradelines = function () {
+        for (const trlInst of Object.values(tradelinesInstances.current)) {
+            trlInst.remove();
+        }
+
+        tradelinesInstances.current = {};
+
+        tradelinesDrawn.current = false;
+
+        setTradeLineMtn({ removeAll: symbol });
     }
 
     const selectSymbol = function (e: BaseSyntheticEvent) {
@@ -376,6 +386,9 @@ export default function ChartFut(props?: { symbols?: string[] }) {
                         <p>Drawing</p>
                         <button onClick={addNewTrendline}>Trend</button>
                         <button onClick={addNewLevelLine}>Level</button>
+                        {tradelines &&
+                            <button onClick={removeAllTradelines}>Remove all</button>
+                        }
                     </div>
                     <div className={css.paintingLayer__inner + ' move-axis-x move-axis-y'}>
                         <div ref={paintingCanvasWrapRef} className={css.paintingCanvasWrap}> </div>
