@@ -1,9 +1,11 @@
 import React, { BaseSyntheticEvent, useEffect, useRef, useState } from 'react';
-import { useGetCandlesTicksQuery, useGetDepthQuery } from '../../app/binanceApi';
+import { binanceApi, useGetCandlesTicksQuery, useGetDepthQuery } from '../../app/binanceApi';
 import { DrawChart } from './DrawChart';
 import css from './Chart.module.scss';
 import { Coordinates } from './Coordinates';
 import { useAlert } from 'react-alert';
+import { useAppDispatch } from '../../app/hooks';
+import { useNavigate, useParams } from 'react-router-dom';
 
 // move
 let startCursorPos = { X: 0, Y: 0 },
@@ -69,7 +71,12 @@ export default function Chart(props?: { symbols?: string[] }) {
 
     const alert = useAlert();
 
-    const [symbol, setSymbol] = useState(null);
+    const { symbol } = useParams();
+    const navigate = useNavigate();
+
+    const dispatch = useAppDispatch();
+
+    // const [symbol, setSymbol] = useState(null);
     const [interval, setInterval] = useState('5m');
     const [scale, setScale] = useState(0);
 
@@ -184,7 +191,9 @@ export default function Chart(props?: { symbols?: string[] }) {
 
     const selectSymbol = function (e: BaseSyntheticEvent) {
         maxPriceRef.current = 0;
-        setSymbol(e.target.value);
+        // setSymbol(e.target.value);
+        dispatch(binanceApi.util.resetApiState());
+        navigate('/chart/' + e.target.value);
     }
 
     const selectInterval = function (val: string) {
@@ -227,9 +236,14 @@ export default function Chart(props?: { symbols?: string[] }) {
 
             <div className={css.intervalButtons}>
                 <button
+                    onClick={() => selectInterval('1m')}
+                    className={interval === '1m' ? css.btnActive : undefined}
+                >1m</button>
+
+                <button
                     onClick={() => selectInterval('5m')}
                     className={interval === '5m' ? css.btnActive : undefined}
-                >5m</button>
+                >*5m*</button>
 
                 <button
                     onClick={() => selectInterval('1h')}

@@ -1,11 +1,13 @@
 import React, { BaseSyntheticEvent, useEffect, useRef, useState } from 'react';
-import { useGetCandlesTicksQuery, useGetDepthQuery } from '../../app/binanceFutApi';
+import { binanceFutApi, useGetCandlesTicksQuery, useGetDepthQuery } from '../../app/binanceFutApi';
 import { DrawChart } from './DrawChart';
 import css from './Chart.module.scss';
 import { Drawing } from './Drawing';
 import { Coordinates } from './Coordinates';
 import { useGetTradeLinesQuery, useSetTradeLinesMutation } from '../../app/botApi';
 import { useAlert } from 'react-alert';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useAppDispatch } from '../../app/hooks';
 
 // move
 let startCursorPos = { X: 0, Y: 0 },
@@ -56,7 +58,6 @@ const moveCanvas = function (contEl, moveXEls, moveYEls) {
 const initDimesions = [4333, 1333];
 
 export default function ChartFut(props?: { symbols?: string[] }) {
-
     const canvasDims = useRef<number[]>(initDimesions);
     const tradelinesDrawn = useRef<boolean>(false);
     const tradelinesInstances = useRef<{ [id: string]: Drawing }>({});
@@ -74,7 +75,12 @@ export default function ChartFut(props?: { symbols?: string[] }) {
 
     const alert = useAlert();
 
-    const [symbol, setSymbol] = useState(null);
+    const { symbol } = useParams();
+    const navigate = useNavigate();
+
+    const dispatch = useAppDispatch();
+
+    // const [symbol, setSymbol] = useState(null);
     const [interval, setInterval] = useState('5m');
     const [scale, setScale] = useState(0);
 
@@ -285,11 +291,11 @@ export default function ChartFut(props?: { symbols?: string[] }) {
         }
     }, [data]);
 
-    useEffect(() => {
-        if (depth && maxPriceRef.current > 0) {
-            chartInstRef.current.drawDepth(depth, symbol);
-        }
-    }, [depth, maxPriceRef.current]);
+    // useEffect(() => {
+    //     if (depth && maxPriceRef.current > 0) {
+    //         chartInstRef.current.drawDepth(depth, symbol);
+    //     }
+    // }, [depth, maxPriceRef.current]);
 
     const addNewTrendline = function () {
         tradelinesDrawn.current = true;
@@ -345,7 +351,9 @@ export default function ChartFut(props?: { symbols?: string[] }) {
         tradelinesDrawn.current = false;
         maxPriceRef.current = 0;
 
-        setSymbol(e.target.value);
+        // setSymbol(e.target.value);
+        dispatch(binanceFutApi.util.resetApiState());
+        navigate('/bot/' + e.target.value);
     }
 
     const selectInterval = function (val: string) {
@@ -410,9 +418,14 @@ export default function ChartFut(props?: { symbols?: string[] }) {
 
             <div className={css.intervalButtons}>
                 <button
+                    onClick={() => selectInterval('1m')}
+                    className={interval === '1m' ? css.btnActive : undefined}
+                >1m</button>
+
+                <button
                     onClick={() => selectInterval('5m')}
                     className={interval === '5m' ? css.btnActive : undefined}
-                >5m</button>
+                >*5m*</button>
 
                 <button
                     onClick={() => selectInterval('1h')}

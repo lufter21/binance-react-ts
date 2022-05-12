@@ -15,9 +15,13 @@ function App() {
     return (
 		<BrowserRouter>
 			<Routes>
-                <Route path="/bot" element={<BotPage />} />
+                <Route path="/bot" element={<BotPage />}>
+                    <Route path=":symbol" element={<BotPage />} />
+                </Route>
                 <Route path="/trade" element={<TradePage />} />
-                <Route path="/chart" element={<ChartPage />} />
+                <Route path="/chart" element={<ChartPage />}>
+                    <Route path=":symbol" element={<ChartPage />} />
+                </Route>
             </Routes>
 		</BrowserRouter>
 	);
