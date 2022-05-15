@@ -57,7 +57,7 @@ const moveCanvas = function (contEl, moveXEls, moveYEls) {
 
 const initDimesions = [4333, 1333];
 
-export default function ChartFut(props?: { symbols?: string[] }) {
+export default function ChartFut(props?: { symbols?: string[], sendPriceFn?: (arg: number) => void }) {
     const canvasDims = useRef<number[]>(initDimesions);
     const tradelinesDrawn = useRef<boolean>(false);
     const tradelinesInstances = useRef<{ [id: string]: Drawing }>({});
@@ -118,7 +118,7 @@ export default function ChartFut(props?: { symbols?: string[] }) {
 
         const percentLoss = Math.abs(price[0] - price[1]) / (price[0] / 100);
         const fee = .08;
-        const lossAmount = .5;
+        const lossAmount = 1;
 
         const usdtAmount = lossAmount * (100 / percentLoss - fee);
 
@@ -169,6 +169,17 @@ export default function ChartFut(props?: { symbols?: string[] }) {
             containerRef.current.querySelectorAll('.move-axis-x'),
             containerRef.current.querySelectorAll('.move-axis-y')
         );
+
+        if (props.sendPriceFn) {
+            paintingCanvasWrapRef.current.style.width = canvasDims.current[0] + 'px';
+            paintingCanvasWrapRef.current.style.height = canvasDims.current[1] + 'px';
+            
+            paintingCanvasWrapRef.current.addEventListener('click', function (e: MouseEvent) {
+                const y = e.clientY - paintingCanvasWrapRef.current.getBoundingClientRect().top;
+
+                props.sendPriceFn(coordsInstRef.current.getProps(0, y).price);
+            });
+        }
     }, []);
 
     useEffect(() => {
@@ -201,8 +212,6 @@ export default function ChartFut(props?: { symbols?: string[] }) {
     useEffect(() => {
         if (symbol && tradelines && tradelines[symbol] && maxPriceRef.current > 0 && !tradelinesDrawn.current) {
             tradelinesDrawn.current = true;
-
-            console.log('trline draw');
 
             const levels = tradelines[symbol].levels;
             const trends = tradelines[symbol].trends;
@@ -353,7 +362,7 @@ export default function ChartFut(props?: { symbols?: string[] }) {
 
         // setSymbol(e.target.value);
         dispatch(binanceFutApi.util.resetApiState());
-        navigate('/bot/' + e.target.value);
+        navigate(e.target.value);
     }
 
     const selectInterval = function (val: string) {

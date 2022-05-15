@@ -1,5 +1,7 @@
 import React, { useRef } from 'react';
+import { useParams } from 'react-router-dom';
 import { useGetTradeMessagesQuery, useSetPositionMutation } from '../app/tradeApi';
+import ChartFut from '../components/chart/ChartFut';
 
 export default function TradePage() {
     const { data, isFetching } = useGetTradeMessagesQuery();
@@ -7,6 +9,8 @@ export default function TradePage() {
     const refPercentLoss = useRef<any>();
     const refStopLoss = useRef<any>();
     const refSymbSelect = useRef<any>();
+
+    const { symbol: tradePair } = useParams();
 
     const symbols = data && data.symbols ? [...data.symbols] : [];
 
@@ -22,28 +26,37 @@ export default function TradePage() {
     const selOpt = symbols.map((s: string) => React.createElement('option', { key: s }, s));
 
     const setPosition = function (position: 'long' | 'short'): void {
-        const opt: { symbol: string; position: 'long' | 'short'; stopLoss: number; onePercLoss: boolean; } = {
-            symbol: refSymbSelect.current.value,
+        const opt: { symbol: string; position: 'long' | 'short'; stopLoss: number; onePercLoss?: boolean; } = {
+            symbol: tradePair,
             stopLoss: refStopLoss.current.value,
-            onePercLoss: refPercentLoss.current.checked,
+            // onePercLoss: refPercentLoss.current.checked,
             position
         };
 
         sendPosition(opt);
     }
 
+    const setStopLoss = function(price: number) {
+        refStopLoss.current.value = price;
+    }
+
     return isFetching ? (<p>Loading...</p>) : (
         <>
-            <input ref={refStopLoss} type="number" name="stopLoss" />
-            <label>
+        <label>
+            StopLoss Price: <input ref={refStopLoss} type="number" name="stopLoss" />
+        </label>
+            
+            {/* <label>
                 <input ref={refPercentLoss} type="checkbox" name="percentLoss" />
                 Percent Loss
-            </label>
+            </label> */}
 
-            <select ref={refSymbSelect} name="symbol">{selOpt}</select>
+            {/* <select ref={refSymbSelect} name="symbol">{selOpt}</select> */}
 
             <button onClick={() => setPosition('long')}>Long</button>
             <button onClick={() => setPosition('short')}>Short</button>
+
+            <ChartFut symbols={symbols} sendPriceFn={setStopLoss} />
         </>
 
 

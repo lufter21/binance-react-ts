@@ -17,6 +17,7 @@ export class Drawing {
         highlight?: boolean
     }[] = [];
     sendFn: (opt: any) => any;
+    sendPriceFn: (opt: any) => any;
     mC: (e: any) => void;
     mM: (e: any) => void;
     kD: (e: any) => void;
@@ -24,7 +25,7 @@ export class Drawing {
     canvasWidth: number;
     canvasHeight: number;
 
-    constructor({ id, canvasWrapEl, coordsInstance, canvasWidth, canvasHeight, type, sendFn }: {
+    constructor({ id, canvasWrapEl, coordsInstance, canvasWidth, canvasHeight, type, sendFn, sendPriceFn }: {
         id: string;
         canvasWrapEl: HTMLDivElement;
         coordsInstance: Coordinates;
@@ -32,10 +33,12 @@ export class Drawing {
         canvasHeight: number;
         type: 'trends' | 'levels';
         sendFn: (opt: any) => any;
+        sendPriceFn?: (opt: any) => any;
     }) {
         this.canvasWidth = canvasWidth;
         this.canvasHeight = canvasHeight;
         this.sendFn = sendFn;
+        this.sendPriceFn = sendPriceFn;
         this.id = id;
         this.type = type;
 
