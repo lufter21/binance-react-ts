@@ -284,6 +284,7 @@ export class Drawing {
 
             } else if (this.type === 'levels') {
                 this.ctx.fillStyle = 'rgba(255,180,242,.35)';
+
                 this.ctx.beginPath();
                 this.ctx.moveTo(0, this.points[0].coords.y);
                 this.ctx.lineTo(this.canvEl.width, this.points[0].coords.y);
@@ -291,6 +292,23 @@ export class Drawing {
                 this.ctx.lineTo(0, this.points[1].coords.y);
                 this.ctx.closePath();
                 this.ctx.fill();
+
+                const rectY = this.points[0].coords.y + (this.points[0].coords.y - this.points[1].coords.y);
+
+                this.ctx.beginPath();
+                this.ctx.moveTo(0, this.points[0].coords.y);
+                this.ctx.lineTo(this.canvEl.width, this.points[0].coords.y);
+                this.ctx.lineTo(this.canvEl.width, rectY);
+                this.ctx.lineTo(0, rectY);
+                this.ctx.closePath();
+                this.ctx.fill();
+
+                this.ctx.strokeStyle = '#dddddd';
+                this.ctx.lineWidth = 1;
+                this.ctx.beginPath();
+                this.ctx.moveTo(0, rectY + .5);
+                this.ctx.lineTo(this.canvEl.width, rectY + .5);
+                this.ctx.stroke();
 
                 for (const point of this.points) {
                     this.ctx.strokeStyle = point.highlight ? '#35ff00' : (point.pointId === 1 ? '#c3a0bd' : '#ff6800');
@@ -311,7 +329,6 @@ export class Drawing {
                         this.ctx.fillText('↑', (this.canvEl.width / 7) * i, this.points[0].coords.y + 21);
                     }
                 }
-
             }
         }
 

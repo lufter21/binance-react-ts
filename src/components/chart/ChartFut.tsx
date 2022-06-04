@@ -55,9 +55,9 @@ const moveCanvas = function (contEl, moveXEls, moveYEls) {
     contEl.addEventListener('mouseup', stop);
 }
 
-const initDimesions = [4333, 1333];
-
 export default function ChartFut(props?: { symbols?: string[], sendPriceFn?: (arg: number) => void }) {
+    const cdlLimit = 99;
+    const initDimesions = [Math.ceil(cdlLimit * 9), Math.ceil(cdlLimit * 8)];
     const canvasDims = useRef<number[]>(initDimesions);
     const tradelinesDrawn = useRef<boolean>(false);
     const tradelinesInstances = useRef<{ [id: string]: Drawing }>({});
@@ -81,7 +81,7 @@ export default function ChartFut(props?: { symbols?: string[], sendPriceFn?: (ar
     const dispatch = useAppDispatch();
 
     // const [symbol, setSymbol] = useState(null);
-    const [interval, setInterval] = useState('5m');
+    const [interval, setInterval] = useState('1h');
     const [scale, setScale] = useState(0);
 
     const symbols = (props.symbols && [...props.symbols]) || ['WAVESUSDT', 'MATICUSDT'];
@@ -96,9 +96,9 @@ export default function ChartFut(props?: { symbols?: string[], sendPriceFn?: (ar
 
     // const { data: tradeList } = useGetTradesListQuery({ symbol, limit: 1000 }, { skip: !symbol });
 
-    const { data } = useGetCandlesTicksQuery({ symbol, limit: 500, interval }, { skip: !symbol });
+    const { data } = useGetCandlesTicksQuery({ symbol, limit: cdlLimit, interval }, { skip: !symbol });
 
-    const { data: depth } = useGetDepthQuery({ symbol, limit: 100 }, { skip: !symbol });
+    const { data: depth } = useGetDepthQuery({ symbol, limit: 99 }, { skip: !symbol });
 
     const { data: tradelines } = useGetTradeLinesQuery();
     const [setTradeLineMtn] = useSetTradeLinesMutation();
@@ -173,7 +173,7 @@ export default function ChartFut(props?: { symbols?: string[], sendPriceFn?: (ar
         if (props.sendPriceFn) {
             paintingCanvasWrapRef.current.style.width = canvasDims.current[0] + 'px';
             paintingCanvasWrapRef.current.style.height = canvasDims.current[1] + 'px';
-            
+
             paintingCanvasWrapRef.current.addEventListener('click', function (e: MouseEvent) {
                 const y = e.clientY - paintingCanvasWrapRef.current.getBoundingClientRect().top;
 
@@ -434,7 +434,7 @@ export default function ChartFut(props?: { symbols?: string[], sendPriceFn?: (ar
                 <button
                     onClick={() => selectInterval('5m')}
                     className={interval === '5m' ? css.btnActive : undefined}
-                >*5m*</button>
+                >5m</button>
 
                 <button
                     onClick={() => selectInterval('1h')}
