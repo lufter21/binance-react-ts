@@ -108,7 +108,7 @@ export default function Bot() {
     const { data, isFetching, isSuccess } = useGetBotMessagesQuery();
     const [botControl] = useBotControlMutation();
 
-    const symbols = data && [...data.availableSymbols];
+    const symbols = null; // data && [...data.availableSymbols];
 
     const strategies = (isSuccess && !!data.strategy) &&
         data.strategy.map((item: any) => <StrItem {...item} />);

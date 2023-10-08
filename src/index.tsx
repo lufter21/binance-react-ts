@@ -1,5 +1,4 @@
-import React from 'react';
-import ReactDOM from 'react-dom';
+import { createRoot } from 'react-dom/client';
 import './index.css';
 import App from './App';
 import { store } from './app/store';
@@ -17,15 +16,15 @@ const options = {
   transition: transitions.SCALE
 };
 
-ReactDOM.render(
-  <React.StrictMode>
-    <Provider store={store}>
-      <AlertProvider template={AlertTemplate} {...options}>
-        <App />
-      </AlertProvider>
-    </Provider>
-  </React.StrictMode>,
-  document.getElementById('root')
+const container = document.getElementById('root')!;
+const root = createRoot(container);
+
+root.render(
+  <Provider store={store}>
+    <AlertProvider template={AlertTemplate} {...options}>
+      <App />
+    </AlertProvider>
+  </Provider>
 );
 
 // If you want your app to work offline and load faster, you can change

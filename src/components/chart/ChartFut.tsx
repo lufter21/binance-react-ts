@@ -4,10 +4,11 @@ import { DrawChart } from './DrawChart';
 import css from './Chart.module.scss';
 import { Drawing } from './Drawing';
 import { Coordinates } from './Coordinates';
-import { useGetTradeLinesQuery, useSetTradeLinesMutation } from '../../app/botApi';
+import { useGetPositionsQuery, useGetTradeLinesQuery, useSetTradeLinesMutation } from '../../app/botApi';
 import { useAlert } from 'react-alert';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAppDispatch } from '../../app/hooks';
+import DrawLines, { Data } from './DrawLines';
 
 // move
 let startCursorPos = { X: 0, Y: 0 },
@@ -55,7 +56,12 @@ const moveCanvas = function (contEl, moveXEls, moveYEls) {
     contEl.addEventListener('mouseup', stop);
 }
 
-export default function ChartFut(props?: { symbols?: string[], sendPriceFn?: (arg: number) => void }) {
+type Props = {
+    symbols?: string[];
+    sendPriceFn?: (arg: number) => void;
+};
+
+export default function ChartFut(props?: Props) {
     const cdlLimit = 99;
     const initDimesions = [Math.ceil(cdlLimit * 9), Math.ceil(cdlLimit * 8)];
     const canvasDims = useRef<number[]>(initDimesions);
@@ -64,6 +70,7 @@ export default function ChartFut(props?: { symbols?: string[], sendPriceFn?: (ar
     const maxPriceRef = useRef<number>(0);
     const coordsInstRef = useRef<Coordinates>();
     const chartInstRef = useRef<DrawChart>();
+    const positionInstRef = useRef<DrawLines>();
     const containerRef = useRef<HTMLDivElement>();
     const paintingCanvasWrapRef = useRef<HTMLDivElement>();
     const canvInnerRef = useRef<HTMLDivElement>();
@@ -72,6 +79,7 @@ export default function ChartFut(props?: { symbols?: string[], sendPriceFn?: (ar
     const depthCanvasRef = useRef<HTMLCanvasElement>();
     const priceScaleBarCanvasRef = useRef<HTMLCanvasElement>();
     const priceBarCanvasRef = useRef<HTMLCanvasElement>();
+    const positionCanvasRef = useRef<HTMLCanvasElement>();
 
     const alert = useAlert();
 
@@ -81,10 +89,10 @@ export default function ChartFut(props?: { symbols?: string[], sendPriceFn?: (ar
     const dispatch = useAppDispatch();
 
     // const [symbol, setSymbol] = useState(null);
-    const [interval, setInterval] = useState('1h');
+    const [interval, setInterval] = useState('1m');
     const [scale, setScale] = useState(0);
 
-    const symbols = (props.symbols && [...props.symbols]) || ['WAVESUSDT', 'MATICUSDT'];
+    const symbols = (props.symbols && [...props.symbols]) || ['BTCUSDT'];
 
     // const { data: _symbols } = useGetSymbolsQuery();
 
@@ -98,10 +106,12 @@ export default function ChartFut(props?: { symbols?: string[], sendPriceFn?: (ar
 
     const { data } = useGetCandlesTicksQuery({ symbol, limit: cdlLimit, interval }, { skip: !symbol });
 
-    const { data: depth } = useGetDepthQuery({ symbol, limit: 99 }, { skip: !symbol });
+    // const { data: depth } = useGetDepthQuery({ symbol, limit: 99 }, { skip: !symbol });
 
     const { data: tradelines } = useGetTradeLinesQuery();
     const [setTradeLineMtn] = useSetTradeLinesMutation();
+
+    const { data: positions } = useGetPositionsQuery();
 
     const viewAmount = function (obj) {
         if (!obj) {
@@ -163,6 +173,15 @@ export default function ChartFut(props?: { symbols?: string[], sendPriceFn?: (ar
         });
 
         chartInstRef.current = chart;
+
+        const positionInst = new DrawLines({
+            canvEl: positionCanvasRef.current,
+            canvasWidth: canvasDims.current[0],
+            canvasHeight: canvasDims.current[1],
+            coordsInstance: coords
+        });
+
+        positionInstRef.current = positionInst;
 
         moveCanvas(
             containerRef.current,
@@ -298,7 +317,32 @@ export default function ChartFut(props?: { symbols?: string[], sendPriceFn?: (ar
             chartInstRef.current.draw(data, null, false);
 
         }
-    }, [data]);
+
+        if (positions) {
+            const position = positions.filter((item) => item.symbol == symbol)[0];
+
+            if (position) {
+                const lines: Data = [
+                    {
+                        price: position.entryPrice,
+                        color: 'blue',
+                    },
+                    {
+                        price: position.stopLoss,
+                        color: 'red',
+                    },
+                    {
+                        price: position.takeProfit,
+                        color: 'green',
+                    },
+                ];
+
+                positionInstRef.current.draw(lines);
+            } else {
+                positionInstRef.current.draw(null);
+            }
+        }
+    }, [data, positions]);
 
     // useEffect(() => {
     //     if (depth && maxPriceRef.current > 0) {
@@ -395,6 +439,7 @@ export default function ChartFut(props?: { symbols?: string[], sendPriceFn?: (ar
                         <canvas ref={linesCanvasRef} className={css.linesCanvas}></canvas>
                         <canvas ref={horVolCanvasRef} className={css.horVolumeCanvas}></canvas>
                         <canvas ref={depthCanvasRef} className={css.depthCanvas}></canvas>
+                        <canvas ref={positionCanvasRef} className={css.positionCanvas}></canvas>
                     </div>
                 </div>
 

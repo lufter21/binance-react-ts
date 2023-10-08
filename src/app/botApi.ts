@@ -1,5 +1,5 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
-import { serverApiBaseUrl } from './apiBaseUrl'
+import { serverApiBaseUrl, websocketServer } from './apiBaseUrl'
 
 type Tradelines = {
     [symbol: string]: {
@@ -21,6 +21,13 @@ type Tradelines = {
             }[];
         }[];
     };
+};
+
+type OpenedPosition = {
+    symbol: string;
+    entryPrice: number;
+    takeProfit: number;
+    stopLoss: number;
 };
 
 export const botApi = createApi({
@@ -78,7 +85,7 @@ export const botApi = createApi({
         }),
 
         getTradeLines: build.query<Tradelines, void>({
-            query: () => ({url: 'tradelines'}),
+            query: () => ({ url: 'tradelines' }),
             providesTags: ['Tradelines']
         }),
 
@@ -96,6 +103,42 @@ export const botApi = createApi({
             }),
             invalidatesTags: ['Tradelines']
         }),
+
+        getPositions: build.query<OpenedPosition[], void>({
+            query: () => 'positions',
+            async onCacheEntryAdded(arg, { updateCachedData, cacheDataLoaded, cacheEntryRemoved }) {
+                const ws = new WebSocket(websocketServer);
+
+                try {
+                    await cacheDataLoaded;
+
+                    const listener = (event: MessageEvent) => {
+                        try {
+                            const data = JSON.parse(event.data);
+
+                            if (data) {
+                                updateCachedData((draft) => {
+                                    Object.assign(draft, data);
+                                });
+                            }
+
+                        } catch (error) {
+                            console.error(error);
+                        }
+                    }
+
+                    ws.addEventListener('message', listener);
+
+                } catch (error) {
+                    console.error(error);
+                }
+
+                await cacheEntryRemoved;
+
+                ws.close();
+            },
+            providesTags: ['Bot'],
+        }),
     }),
 });
 
@@ -103,5 +146,6 @@ export const {
     useGetBotMessagesQuery,
     useBotControlMutation,
     useGetTradeLinesQuery,
-    useSetTradeLinesMutation
+    useSetTradeLinesMutation,
+    useGetPositionsQuery,
 } = botApi;
